@@ -51,6 +51,40 @@
   form.row input[name=n] { flex:0 1 130px; }
   form.row input[name=t] { flex:1 1 200px; }
   .stack > * { display:block; width:100%; margin-bottom:8px; }
+  /* tabs + feed */
+  .tabs { display:flex; gap:8px; margin-bottom:16px; }
+  .tabs button { flex:1; border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:12px; padding:10px; font:800 14px Inter, sans-serif; cursor:pointer; }
+  .tabs button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .view { display:none; } .view.on { display:block; }
+  .composer { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:16px; }
+  .composer textarea { width:100%; resize:vertical; font-size:16px; }
+  .composer .row2 { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .post { background:var(--panel); border:1px solid var(--line); border-radius:16px; margin-bottom:16px; overflow:hidden; }
+  .phead { display:flex; gap:10px; align-items:center; padding:14px 16px 6px; }
+  .av { width:44px; height:44px; border-radius:50%; flex:none; display:grid; place-items:center; font:22px "Bebas Neue", sans-serif; color:#fff; background:linear-gradient(135deg, var(--accent), #22e3ff); }
+  .phead .who { flex:1; min-width:0; }
+  .phead .who b { font-size:15px; }
+  .vb { display:inline-grid; place-items:center; width:16px; height:16px; border-radius:50%; background:#22e3ff; color:#00131a; font-size:10px; font-weight:800; margin-left:4px; vertical-align:1px; }
+  .ptext { padding:4px 16px 10px; white-space:pre-wrap; word-wrap:break-word; font-size:16px; }
+  .ptext a { color:var(--accent); font-weight:600; word-break:break-all; }
+  .lcard { display:block; margin:0 16px 10px; border:1px solid var(--line); border-radius:14px; overflow:hidden; text-decoration:none; color:var(--text); background:var(--bg); }
+  .lcard .thumb { position:relative; aspect-ratio:16/9; background:linear-gradient(135deg,#c4002b,#ff3d3d 60%,#1a0006); display:grid; place-items:center; }
+  .lcard .thumb img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .lcard .thumb .play { position:relative; width:64px; height:44px; border-radius:12px; background:rgba(255,0,0,.9); display:grid; place-items:center; color:#fff; font-size:20px; box-shadow:0 4px 18px rgba(0,0,0,.5); }
+  .lcard.sp .thumb { aspect-ratio:auto; height:84px; background:linear-gradient(135deg,#1db954,#0b3d1f); }
+  .lcard.sp .thumb .play { background:#1db954; border-radius:50%; width:48px; height:48px; }
+  .lcard .meta { padding:10px 12px; }
+  .lcard .meta small { display:block; color:var(--muted); text-transform:uppercase; font-size:11px; letter-spacing:.06em; }
+  .lcard .meta b { display:block; font-size:15px; }
+  .pstats { display:flex; justify-content:space-between; padding:0 16px 8px; font-size:13px; color:var(--muted); }
+  .pacts { display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--line); }
+  .pacts button { background:none; border:0; color:var(--text); padding:10px; cursor:pointer; font:600 14px Inter, sans-serif; }
+  .pacts button:hover { background:color-mix(in srgb, var(--accent) 12%, transparent); }
+  .pacts button.on { color:var(--accent); }
+  .post .comments { margin:0; padding:10px 16px 12px; border-top:1px solid var(--line); }
+  .post.open .comments { display:block; }
+  .pin { color:var(--accent); font-weight:800; }
+  body.editing #fanHint { display:none; }
   .edit-only { display:none; }
   body.editing .edit-only { display:block; }
   body.editing .edit-only.inline { display:inline-flex; }
@@ -78,7 +112,25 @@
 
   <div class="layout">
     <section>
-      <div class="timeline" id="timeline"></div>
+      <div class="tabs"><button data-v="feed" class="on">📣 Posts</button><button data-v="story">📖 Story timeline</button></div>
+
+      <div class="view on" id="view-feed">
+        <form class="composer edit-only" id="composer">
+          <div class="phead" style="padding:0 0 8px"><div class="av">LL</div><div class="who"><b>Post as Law Lucas</b><div class="muted">Paste a YouTube or Spotify link and it turns into a card.</div></div></div>
+          <textarea name="t" rows="3" maxlength="1000" placeholder="What's going on, Law? e.g. Hey everyone check out my new video https://youtu.be/…" required></textarea>
+          <div id="preview"></div>
+          <div class="row2">
+            <label class="muted"><input type="checkbox" name="pin"> Pin to top</label>
+            <button class="btn primary" type="submit">Post</button>
+          </div>
+        </form>
+        <div class="panel" id="fanHint" style="padding:12px 16px"><span class="muted">Follow Law's updates here. React 🔥, comment, or share a post. (Law posts from Artist mode.)</span></div>
+        <div id="feed"></div>
+      </div>
+
+      <div class="view" id="view-story">
+        <div class="timeline" id="timeline"></div>
+      </div>
     </section>
 
     <aside>
@@ -130,11 +182,25 @@
 </div>
 
 <script>
-const KEY = 'law-story-v1';
+const KEY = 'law-story-v2';
+const H = 3600e3, NOW = Date.now();
+// Titles for links we know, so cards show a real name (from Law's YouTube and Spotify).
+const KNOWN = {
+  RLaP3H9xtzE:'Law Lucas - Young, Wild & Free', '0u5zaw6z0FI':'Law Lucas - KUNTRY Gurl Zydeco (Official Music Video)', mqUHk_yV8b0:'Law Lucas - Let Me See It (Official Music Video) feat. KayyKilo',
+  '2bVoLZj0f-Y':'Law Lucas - H.U.S.T.L.E.R', '6EK_OYgNmj8':'Law Lucas - El Chapo Wannabeez', bZkW1_Uifqk:'Law Lucas - Call Me Daddy', hwcGLsjooMg:'Law Lucas - Stayed Down',
+  E10q_dTcUC4:'Law Lucas feat. LA Tray - Trail Ride', CIGrPucDuro:'Law Lucas - Direction (Official Music Video)', 'SGqBFxS5v-g':'#TikTokTuesday live at Blazing Cajun',
+  '0talbmN0OkGfbgKjcFn1hK':'Middle Of The Club', '7zRbaCjFog2tjxRm531cXE':'Young, Wild & Free', '59xEj4dpeaKmkoyemgi7S0':'Kuntry Gurl Zydeco', '32gjjI5RGjvLp937PWvNlU':'Big Spender',
+};
+const SEED_POSTS = [
+  { id:201, ts:NOW - 2*H, pin:true, t:"Hey everyone check out my new video \"Young, Wild & Free\" 🔥🔥 Run it up and share it with somebody who needs that energy today!\nhttps://youtu.be/RLaP3H9xtzE", fire:34, comments:[{n:'Keisha (sample)', t:'This one hits different 🙌', d:'sample'}] },
+  { id:202, ts:NOW - 26*H, t:"\"Middle Of The Club\" is out everywhere now. Add it to your playlist 🎶\nhttps://open.spotify.com/album/0talbmN0OkGfbgKjcFn1hK", fire:21, comments:[] },
+  { id:203, ts:NOW - 5*24*H, t:"Thank you Blazing Cajun for having me on #TikTokTuesday! Louisiana always shows love 💜 Full live set here 👇\nhttps://www.youtube.com/watch?v=SGqBFxS5v-g", fire:17, comments:[{n:'Dre (sample)', t:'Was there! Crowd was crazy', d:'sample'}] },
+];
 const SEED = {
   title: "LAW'S STORY",
   intro: "From Plaquemine to the stage. Every chapter of the journey — and you're part of it. Leave a comment, or add your own memory to the story.",
   accent: '#ff3d9a', bg: 'neon', font: 'Bebas Neue',
+  posts: SEED_POSTS,
   chapters: [
     { id:1, when:'Age 10', title:'The first song', text:"Growing up in Plaquemine, Louisiana, Law watched his father DJ and soaked up the mixtape culture around him. At ten he recorded his first song.", fire:12, comments:[{n:'Big Tee', t:'I remember those tapes! 🔥', d:'sample'}] },
     { id:2, when:'Teen years', title:'Bow City Boys', text:"Performing with Bow City Boys, Law learned the stage, the crowd and the grind.", fire:5, comments:[] },
@@ -178,7 +244,104 @@ function applyLook() {
   document.querySelectorAll('.bgopt').forEach(b => b.style.borderColor = b.dataset.b === S.bg ? 'var(--text)' : 'var(--line)');
 }
 
+// ---------- Posts feed ----------
+const URL_RE = /https?:\/\/[^\s<]+[^\s<.,!?)"']/g;
+function ytId(u) { const m = u.match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/)([\w-]{11})/); return m && m[1]; }
+function spId(u) { const m = u.match(/open\.spotify\.com\/(album|track|artist|playlist)\/([A-Za-z0-9]+)/); return m && { kind: m[1], id: m[2] }; }
+function linkify(text) {  // escape plain text, turn each link into a clickable <a>
+  let out = '', last = 0;
+  for (const m of String(text).matchAll(URL_RE)) {
+    const u = m[0];
+    out += esc(text.slice(last, m.index)) + `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.length > 48 ? u.slice(0, 45) + '…' : u)}</a>`;
+    last = m.index + u.length;
+  }
+  return out + esc(String(text).slice(last));
+}
+function cardFor(text) {
+  const u = (text.match(URL_RE) || [])[0]; if (!u) return '';
+  const y = ytId(u);
+  if (y) return `<a class="lcard" href="https://www.youtube.com/watch?v=${y}" target="_blank" rel="noopener">
+      <div class="thumb"><img src="https://i.ytimg.com/vi/${y}/hqdefault.jpg" alt="" onerror="this.remove()"><span class="play">▶</span></div>
+      <div class="meta"><small>youtube.com</small><b>${esc(KNOWN[y] || 'Watch on YouTube')}</b></div></a>`;
+  const s = spId(u);
+  if (s) return `<a class="lcard sp" href="${esc(u)}" target="_blank" rel="noopener">
+      <div class="thumb"><span class="play">▶</span></div>
+      <div class="meta"><small>open.spotify.com</small><b>${esc(KNOWN[s.id] ? KNOWN[s.id] + ' · Law Lucas' : 'Listen on Spotify')}</b></div></a>`;
+  let host = ''; try { host = new URL(u).hostname.replace(/^www\./, ''); } catch (e) {}
+  return `<a class="lcard" href="${esc(u)}" target="_blank" rel="noopener"><div class="meta"><small>${esc(host)}</small><b>Open link ↗</b></div></a>`;
+}
+function ago(ts) {
+  const m = Math.round((Date.now() - ts) / 60000);
+  if (m < 1) return 'Just now'; if (m < 60) return m + 'm'; if (m < 1440) return Math.round(m / 60) + 'h';
+  if (m < 10080) return Math.round(m / 1440) + 'd';
+  return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+function renderFeed() {
+  const open = new Set([...document.querySelectorAll('.post.open')].map(e => +e.dataset.id));
+  const posts = [...S.posts].sort((a, b) => (b.pin ? 1 : 0) - (a.pin ? 1 : 0) || b.ts - a.ts);
+  document.getElementById('feed').innerHTML = posts.map(p => `
+    <article class="post ${open.has(p.id) ? 'open' : ''}" data-id="${p.id}">
+      <div class="phead"><div class="av">LL</div>
+        <div class="who"><b>Law Lucas</b><span class="vb" title="Verified">✔</span>
+          <div class="muted">${p.pin ? '<span class="pin">📌 Pinned</span> · ' : ''}${ago(p.ts)}${String(p.id).length === 3 ? ' · sample post' : ''}</div></div>
+        <button class="btn ghost small edit-only inline" data-pa="pin">${p.pin ? 'Unpin' : 'Pin'}</button>
+        <button class="btn ghost small edit-only inline" data-pa="del">Delete</button>
+      </div>
+      <div class="ptext">${linkify(p.t)}</div>
+      ${cardFor(p.t)}
+      <div class="pstats"><span>🔥 ${p.fire || 0}</span><span>${p.comments.length} comment${p.comments.length === 1 ? '' : 's'}</span></div>
+      <div class="pacts">
+        <button data-pa="fire" class="${p.mine ? 'on' : ''}">🔥 Fire</button>
+        <button data-pa="cm">💬 Comment</button>
+        <button data-pa="share">↗ Share</button>
+      </div>
+      <div class="comments">
+        ${p.comments.map(m => `<div class="cm"><b>${esc(m.n)}</b> ${linkify(m.t)}<small>${esc(m.d)}</small></div>`).join('') || '<div class="muted">Be the first to comment.</div>'}
+        <form class="row" data-pa="comment">
+          <input name="n" placeholder="Name" maxlength="40" required>
+          <input name="t" placeholder="Write a comment…" maxlength="300" required>
+          <button class="btn primary small" type="submit">Post</button>
+        </form>
+      </div>
+    </article>`).join('') || '<p class="muted">No posts yet.</p>';
+}
+document.getElementById('feed').addEventListener('click', e => {
+  const b = e.target.closest('button[data-pa]'); if (!b) return;
+  const art = b.closest('.post'), i = S.posts.findIndex(p => p.id === +art.dataset.id), p = S.posts[i], a = b.dataset.pa;
+  if (a === 'cm') { art.classList.toggle('open'); art.querySelector('input[name=n]')?.focus(); return; }
+  if (a === 'share') {
+    const first = (p.t.match(URL_RE) || [])[0] || location.href;
+    if (navigator.share) navigator.share({ title: 'Law Lucas', text: p.t.replace(URL_RE, '').trim(), url: first }).catch(() => {});
+    else navigator.clipboard?.writeText(first).then(() => { b.textContent = '✓ Link copied'; setTimeout(() => b.textContent = '↗ Share', 1500); });
+    return;
+  }
+  if (a === 'fire') { p.mine = !p.mine; p.fire = (p.fire || 0) + (p.mine ? 1 : -1); }
+  if (a === 'pin') p.pin = !p.pin;
+  if (a === 'del' && confirm('Delete this post?')) S.posts.splice(i, 1);
+  save(); renderFeed();
+});
+document.getElementById('feed').addEventListener('submit', e => {
+  e.preventDefault(); const f = e.target, p = S.posts.find(p => p.id === +f.closest('.post').dataset.id);
+  p.comments.push({ n: f.n.value.trim(), t: f.t.value.trim(), d: today() });
+  save(); renderFeed();
+});
+const composer = document.getElementById('composer');
+composer.t.addEventListener('input', () => document.getElementById('preview').innerHTML = cardFor(composer.t.value));
+composer.onsubmit = e => {
+  e.preventDefault();
+  S.posts.push({ id: Date.now(), ts: Date.now(), t: composer.t.value.trim(), pin: composer.pin.checked, fire: 0, comments: [] });
+  if (composer.pin.checked) S.posts.forEach(p => { if (p.id !== S.posts.at(-1).id) p.pin = false; });
+  composer.reset(); document.getElementById('preview').innerHTML = '';
+  save(); renderFeed();
+};
+document.querySelector('.tabs').onclick = e => {
+  const v = e.target.dataset.v; if (!v) return;
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  document.querySelectorAll('.view').forEach(x => x.classList.toggle('on', x.id === 'view-' + v));
+};
+
 function render() {
+  renderFeed();
   const open = new Set([...document.querySelectorAll('.ch.open')].map(e => +e.dataset.id));
   document.getElementById('timeline').innerHTML = S.chapters.map(c => `
     <article class="ch ${c.fan ? 'fan' : ''} ${open.has(c.id) ? 'open' : ''}" data-id="${c.id}">
