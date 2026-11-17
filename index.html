@@ -3,11 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LAW LUCAS · Artist Page (demo)</title>
+<title>Law Lucas Demo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
   :root { --bg:#0b0710; --panel:#16101f; --text:#f6f1ff; --muted:#b8a9cc; --accent:#ff3d9a; --accent2:#22e3ff; --glow:rgba(255,61,154,.55); --line:rgba(255,255,255,.12); }
+  /* The page picks its own look (themes below); system dark mode keeps the default Bayou Neon tokens. */
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0b0710; --panel:#16101f; --text:#f6f1ff; --muted:#b8a9cc; } }
+  :root[data-theme="dark"] { --bg:#0b0710; --panel:#16101f; --text:#f6f1ff; --muted:#b8a9cc; }
   body[data-theme="sunset"] { --bg:#1a0b06; --panel:#2a130b; --text:#fff4ea; --muted:#e5bfa3; --accent:#ff8a1f; --accent2:#ffd23f; --glow:rgba(255,138,31,.55); }
   body[data-theme="myspace"] { --bg:#0d1f3c; --panel:#13305c; --text:#ffffff; --muted:#a9c4ea; --accent:#ff6600; --accent2:#7fd3ff; --glow:rgba(255,102,0,.5); }
   body[data-theme="clean"] { --bg:#f4f1ec; --panel:#ffffff; --text:#1a1622; --muted:#5d5568; --accent:#7a2cff; --accent2:#00a37a; --glow:rgba(122,44,255,.35); --line:rgba(0,0,0,.1); }
