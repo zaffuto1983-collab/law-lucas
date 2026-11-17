@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Law's Story</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;800&family=Permanent+Marker&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0b0710; --panel:#16101f; --text:#f6f1ff; --muted:#b8a9cc; --accent:#ff3d9a; --line:rgba(255,255,255,.12); --head:"Bebas Neue"; --bgimg:none; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0b0710; --panel:#16101f; --text:#f6f1ff; --muted:#b8a9cc; } }
+  :root[data-theme="dark"] { --bg:#0b0710; --panel:#16101f; --text:#f6f1ff; --muted:#b8a9cc; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bgimg), var(--bg); background-attachment:fixed; color:var(--text); font:16px/1.55 Inter, system-ui, sans-serif; }
+  a { color:var(--accent); }
+  .wrap { width:100%; max-width:1180px; margin:0 auto; padding:0 16px; }
+  .top { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:16px 0; flex-wrap:wrap; }
+  .btn { border:0; border-radius:12px; padding:10px 16px; font:800 14px Inter, sans-serif; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+  .btn.primary { background:var(--accent); color:#fff; }
+  .btn.ghost { background:transparent; color:var(--text); border:1px solid var(--line); }
+  .btn.small { padding:6px 10px; font-size:12px; }
+  h1.title { font:clamp(52px,10vw,110px)/.9 var(--head), sans-serif; margin:20px 0 6px; letter-spacing:.02em; outline:none; }
+  .intro { color:var(--muted); font-size:18px; margin:0 0 26px; outline:none; }
+  [contenteditable="true"] { box-shadow:0 0 0 2px var(--accent); border-radius:6px; }
+  .layout { display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:22px; padding-bottom:50px; }
+  @media (max-width:900px) { .layout { grid-template-columns:minmax(0,1fr); } }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:18px; margin-bottom:20px; }
+  h2 { font:28px/1 var(--head), sans-serif; margin:0 0 12px; letter-spacing:.03em; }
+  .muted { color:var(--muted); font-size:13px; }
+
+  /* timeline */
+  .timeline { position:relative; padding-left:28px; }
+  .timeline::before { content:""; position:absolute; left:9px; top:6px; bottom:6px; width:3px; background:linear-gradient(var(--accent), transparent); border-radius:3px; }
+  .ch { position:relative; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px 18px; margin-bottom:18px; }
+  .ch::before { content:""; position:absolute; left:-26px; top:20px; width:15px; height:15px; border-radius:50%; background:var(--accent); box-shadow:0 0 14px var(--accent); }
+  .ch.fan::before { background:var(--text); box-shadow:none; }
+  .when { font:800 12px Inter, sans-serif; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); }
+  .ch h3 { font:30px/1 var(--head), sans-serif; margin:4px 0 6px; letter-spacing:.02em; }
+  .ch p { margin:0 0 10px; }
+  .pill { display:inline-block; font-size:11px; border:1px solid var(--line); border-radius:999px; padding:2px 8px; margin-left:6px; color:var(--muted); vertical-align:middle; }
+  .acts { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .react { background:none; border:1px solid var(--line); color:var(--text); border-radius:999px; padding:4px 10px; cursor:pointer; font-size:13px; }
+  .react.on { border-color:var(--accent); }
+  .comments { margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; display:none; }
+  .ch.open .comments { display:block; }
+  .cm { font-size:14px; margin-bottom:8px; }
+  .cm b { color:var(--accent); }
+  .cm small { color:var(--muted); margin-left:6px; }
+  form.row { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  input, textarea, select { background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:10px; padding:9px 10px; font:inherit; font-size:14px; min-width:0; }
+  form.row input[name=n] { flex:0 1 130px; }
+  form.row input[name=t] { flex:1 1 200px; }
+  .stack > * { display:block; width:100%; margin-bottom:8px; }
+  .edit-only { display:none; }
+  body.editing .edit-only { display:block; }
+  body.editing .edit-only.inline { display:inline-flex; }
+  .swatches { display:flex; gap:8px; flex-wrap:wrap; margin:6px 0 12px; }
+  .sw { width:34px; height:34px; border-radius:10px; border:2px solid var(--line); cursor:pointer; }
+  .bgopts { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:6px 0 12px; }
+  .bgopt { height:46px; border-radius:10px; border:2px solid var(--line); cursor:pointer; }
+  .pending { border:1px dashed var(--accent); border-radius:12px; padding:10px; margin-bottom:10px; font-size:14px; }
+  .banner { background:var(--accent); color:#fff; text-align:center; padding:8px 16px; font-weight:800; font-size:13px; display:none; }
+  body.editing .banner { display:block; }
+</style>
+</head>
+<body>
+<div class="banner">✏️ Artist mode: click the title, intro or any chapter text to change it. Pick colors, fonts and background on the right.</div>
+<div class="wrap">
+  <div class="top">
+    <a class="btn ghost" href="index.html">← Back to Law's page</a>
+    <div class="acts">
+      <button class="btn ghost" id="editBtn">✏️ Artist mode (demo)</button>
+    </div>
+  </div>
+
+  <h1 class="title" id="title" data-key="title">LAW'S STORY</h1>
+  <p class="intro" id="intro" data-key="intro">From Plaquemine to the stage. Every chapter of the journey — and you're part of it. Leave a comment, or add your own memory to the story.</p>
+
+  <div class="layout">
+    <section>
+      <div class="timeline" id="timeline"></div>
+    </section>
+
+    <aside>
+      <div class="panel edit-only">
+        <h2>Design this page</h2>
+        <div class="muted">Accent color</div>
+        <div class="swatches" id="swatches"></div>
+        <div class="muted">Background</div>
+        <div class="bgopts" id="bgopts"></div>
+        <div class="muted">Headline font</div>
+        <select id="font" style="width:100%;margin:6px 0 12px">
+          <option value="Bebas Neue">Bebas Neue (bold, tall)</option>
+          <option value="Permanent Marker">Permanent Marker (handwritten)</option>
+          <option value="Playfair Display">Playfair Display (classic)</option>
+        </select>
+        <h2 style="margin-top:8px">Add a chapter</h2>
+        <form id="addCh" class="stack">
+          <input name="when" placeholder="When (e.g. Summer 2026)" required>
+          <input name="title" placeholder="Chapter title" required>
+          <textarea name="text" rows="3" placeholder="What happened?" required></textarea>
+          <button class="btn primary" type="submit">Add chapter</button>
+        </form>
+      </div>
+
+      <div class="panel edit-only">
+        <h2>Fan stories to review</h2>
+        <div id="pending"><p class="muted">Nothing waiting.</p></div>
+        <button class="btn ghost small" id="reset">Reset demo</button>
+      </div>
+
+      <div class="panel">
+        <h2>Add to the story</h2>
+        <p class="muted">Saw Law live? Got a memory with one of his songs? Share it. Law approves fan stories before they join the timeline.</p>
+        <form id="fanForm" class="stack">
+          <input name="n" placeholder="Your name" maxlength="40" required>
+          <input name="when" placeholder="When (e.g. Trail ride, May 2025)" maxlength="60" required>
+          <textarea name="t" rows="4" placeholder="Your story" maxlength="600" required></textarea>
+          <button class="btn primary" type="submit">Send my story</button>
+        </form>
+        <p class="muted" id="fanMsg"></p>
+      </div>
+
+      <div class="panel">
+        <h2>House rules</h2>
+        <p class="muted">Be real, be kind. No threats, no violence, no hate, nothing sexual involving minors. Comments that break the rules are removed. Full rules apply to every page.</p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+const KEY = 'law-story-v1';
+const SEED = {
+  title: "LAW'S STORY",
+  intro: "From Plaquemine to the stage. Every chapter of the journey — and you're part of it. Leave a comment, or add your own memory to the story.",
+  accent: '#ff3d9a', bg: 'neon', font: 'Bebas Neue',
+  chapters: [
+    { id:1, when:'Age 10', title:'The first song', text:"Growing up in Plaquemine, Louisiana, Law watched his father DJ and soaked up the mixtape culture around him. At ten he recorded his first song.", fire:12, comments:[{n:'Big Tee', t:'I remember those tapes! 🔥', d:'sample'}] },
+    { id:2, when:'Teen years', title:'Bow City Boys', text:"Performing with Bow City Boys, Law learned the stage, the crowd and the grind.", fire:5, comments:[] },
+    { id:3, when:'Teen years', title:'JLT3 and "Candy Girl"', text:'With JLT3, "Candy Girl" took off across the region and brought the first real shows.', fire:9, comments:[{n:'Keisha', t:'Candy Girl was THE song at every party 😂', d:'sample'}] },
+    { id:4, when:'2019', title:'Law Lucas is born', text:"Law goes solo as Law Lucas — Living And Winning, Living Undefeated, Competitive And Successful — and drops Jet Skis and Palm Trees.", fire:15, comments:[] },
+    { id:5, when:'2020', title:'The LAW Lucas Story', text:"The second album tells his story in his own words.", fire:7, comments:[] },
+    { id:6, when:'2024', title:'Trail Ride season', text:'"Trail Ride" with LA Tray hits Southern clubs and trail rides all summer.', fire:21, comments:[{n:'Dre', t:'This was on repeat at every trail ride 🐎', d:'sample'}] },
+    { id:7, when:'February 2026', title:'Signing with Z-Connections', text:"Law joins Z-Connections for management and a new chapter starts.", fire:18, comments:[] },
+    { id:8, when:'2026', title:'Kuntry Gurl Zydeco', text:'"Kuntry Gurl Zydeco" brings zydeco to a new crowd, followed by "Young, Wild & Free" and "Middle Of The Club".', fire:26, comments:[] },
+  ],
+  pending: [
+    { id:101, n:'Monique (sample)', when:'Blazing Cajun, Sept 2026', t:'Law pulled me on stage for Kuntry Gurl Zydeco and the whole place lost it. Best night!' },
+  ],
+};
+const ACCENTS = ['#ff3d9a','#ff8a1f','#22e3ff','#ffd23f','#7a2cff','#2bd67b','#ff4444','#ffffff'];
+const BGS = {
+  neon:   'radial-gradient(900px 500px at 10% 0%, rgba(255,61,154,.35), transparent 60%), radial-gradient(800px 500px at 100% 20%, rgba(34,227,255,.25), transparent 60%)',
+  bayou:  'linear-gradient(180deg, rgba(20,60,40,.85), rgba(5,15,10,.95))',
+  sunset: 'linear-gradient(180deg, rgba(255,120,40,.45), rgba(80,10,40,.6) 50%, rgba(10,5,15,1))',
+  stage:  'radial-gradient(500px 700px at 50% -10%, rgba(255,255,255,.28), transparent 70%)',
+  plain:  'none',
+  denim:  'repeating-linear-gradient(45deg, rgba(40,70,120,.5) 0 6px, rgba(30,55,100,.5) 6px 12px)',
+};
+
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY)) || structuredClone(SEED); } catch (e) { S = structuredClone(SEED); }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today = () => new Date().toISOString().slice(0, 10);
+const editing = () => document.body.classList.contains('editing');
+
+function applyLook() {
+  const r = document.documentElement.style;
+  r.setProperty('--accent', S.accent);
+  r.setProperty('--bgimg', BGS[S.bg] || 'none');
+  r.setProperty('--head', `"${S.font}"`);
+  document.getElementById('title').textContent = S.title;
+  document.getElementById('intro').textContent = S.intro;
+  document.getElementById('font').value = S.font;
+  document.querySelectorAll('.sw').forEach(b => b.style.borderColor = b.dataset.c === S.accent ? 'var(--text)' : 'var(--line)');
+  document.querySelectorAll('.bgopt').forEach(b => b.style.borderColor = b.dataset.b === S.bg ? 'var(--text)' : 'var(--line)');
+}
+
+function render() {
+  const open = new Set([...document.querySelectorAll('.ch.open')].map(e => +e.dataset.id));
+  document.getElementById('timeline').innerHTML = S.chapters.map(c => `
+    <article class="ch ${c.fan ? 'fan' : ''} ${open.has(c.id) ? 'open' : ''}" data-id="${c.id}">
+      <div class="when">${esc(c.when)}${c.fan ? `<span class="pill">Fan story · ${esc(c.fan)}</span>` : ''}</div>
+      <h3 data-f="title">${esc(c.title)}</h3>
+      <p data-f="text">${esc(c.text)}</p>
+      <div class="acts">
+        <button class="react ${c.mine ? 'on' : ''}" data-a="fire">🔥 ${c.fire || 0}</button>
+        <button class="react" data-a="toggle">💬 ${c.comments.length} comment${c.comments.length === 1 ? '' : 's'}</button>
+        <button class="btn ghost small edit-only inline" data-a="up">↑</button>
+        <button class="btn ghost small edit-only inline" data-a="down">↓</button>
+        <button class="btn ghost small edit-only inline" data-a="del">Remove</button>
+      </div>
+      <div class="comments">
+        ${c.comments.map(m => `<div class="cm"><b>${esc(m.n)}</b> ${esc(m.t)}<small>${esc(m.d)}</small></div>`).join('') || '<div class="muted">Be the first to comment.</div>'}
+        <form class="row" data-a="comment">
+          <input name="n" placeholder="Name" maxlength="40" required>
+          <input name="t" placeholder="Leave a comment" maxlength="300" required>
+          <button class="btn primary small" type="submit">Post</button>
+        </form>
+      </div>
+    </article>`).join('');
+  document.querySelectorAll('.ch h3, .ch p').forEach(el => el.contentEditable = editing());
+  document.getElementById('pending').innerHTML = S.pending.length ? S.pending.map(p => `
+    <div class="pending" data-id="${p.id}"><b>${esc(p.n)}</b> · ${esc(p.when)}<br>${esc(p.t)}
+      <div class="acts" style="margin-top:6px"><button class="btn primary small" data-p="ok">Approve</button><button class="btn ghost small" data-p="no">Decline</button></div></div>`).join('')
+    : '<p class="muted">Nothing waiting.</p>';
+}
+
+// Timeline clicks
+document.getElementById('timeline').addEventListener('click', e => {
+  const b = e.target.closest('[data-a]'); if (!b || b.tagName === 'FORM') return;
+  const art = b.closest('.ch'), i = S.chapters.findIndex(c => c.id === +art.dataset.id), c = S.chapters[i];
+  const a = b.dataset.a;
+  if (a === 'toggle') { art.classList.toggle('open'); return; }
+  if (a === 'fire') { c.mine = !c.mine; c.fire = (c.fire || 0) + (c.mine ? 1 : -1); }
+  if (a === 'up' && i > 0) [S.chapters[i - 1], S.chapters[i]] = [S.chapters[i], S.chapters[i - 1]];
+  if (a === 'down' && i < S.chapters.length - 1) [S.chapters[i + 1], S.chapters[i]] = [S.chapters[i], S.chapters[i + 1]];
+  if (a === 'del' && confirm('Remove this chapter?')) S.chapters.splice(i, 1);
+  save(); render();
+});
+document.getElementById('timeline').addEventListener('submit', e => {
+  e.preventDefault();
+  const f = e.target, c = S.chapters.find(c => c.id === +f.closest('.ch').dataset.id);
+  c.comments.push({ n: f.n.value.trim(), t: f.t.value.trim(), d: today() });
+  save(); render();
+});
+// Inline text edits (artist mode)
+document.addEventListener('focusout', e => {
+  const el = e.target; if (!editing() || el.contentEditable !== 'true') return;
+  if (el.dataset.key) S[el.dataset.key] = el.textContent.trim();
+  const art = el.closest('.ch');
+  if (art && el.dataset.f) S.chapters.find(c => c.id === +art.dataset.id)[el.dataset.f] = el.textContent.trim();
+  save();
+});
+
+// Artist mode
+document.getElementById('editBtn').onclick = () => {
+  document.body.classList.toggle('editing');
+  const on = editing();
+  document.getElementById('editBtn').textContent = on ? '✓ Done editing' : '✏️ Artist mode (demo)';
+  ['title', 'intro'].forEach(id => document.getElementById(id).contentEditable = on);
+  render();
+};
+document.getElementById('swatches').innerHTML = ACCENTS.map(c => `<button class="sw" data-c="${c}" style="background:${c}" aria-label="Color ${c}"></button>`).join('');
+document.getElementById('swatches').onclick = e => { const c = e.target.dataset.c; if (c) { S.accent = c; save(); applyLook(); } };
+document.getElementById('bgopts').innerHTML = Object.entries(BGS).map(([k, v]) => `<button class="bgopt" data-b="${k}" title="${k}" style="background:${v === 'none' ? '#111' : v + ', #111'}"></button>`).join('');
+document.getElementById('bgopts').onclick = e => { const b = e.target.dataset.b; if (b) { S.bg = b; save(); applyLook(); } };
+document.getElementById('font').onchange = e => { S.font = e.target.value; save(); applyLook(); };
+document.getElementById('addCh').onsubmit = e => {
+  e.preventDefault(); const f = e.target;
+  S.chapters.push({ id: Date.now(), when: f.when.value.trim(), title: f.title.value.trim(), text: f.text.value.trim(), fire: 0, comments: [] });
+  f.reset(); save(); render();
+};
+document.getElementById('pending').onclick = e => {
+  const b = e.target.closest('[data-p]'); if (!b) return;
+  const id = +b.closest('.pending').dataset.id, i = S.pending.findIndex(p => p.id === id), p = S.pending[i];
+  if (b.dataset.p === 'ok') S.chapters.push({ id: p.id, when: p.when, title: `${p.n}'s memory`, text: p.t, fan: p.n, fire: 0, comments: [] });
+  S.pending.splice(i, 1); save(); render();
+};
+document.getElementById('reset').onclick = () => { if (confirm('Reset the demo story?')) { S = structuredClone(SEED); save(); applyLook(); render(); } };
+
+// Fans add to the story
+document.getElementById('fanForm').onsubmit = e => {
+  e.preventDefault(); const f = e.target;
+  S.pending.push({ id: Date.now(), n: f.n.value.trim(), when: f.when.value.trim(), t: f.t.value.trim() });
+  f.reset(); save(); render();
+  document.getElementById('fanMsg').textContent = 'Thanks! Law reviews fan stories before they go on the timeline. (Demo: open Artist mode to approve it.)';
+};
+
+applyLook(); render();
+</script>
+</body>
+</html>
