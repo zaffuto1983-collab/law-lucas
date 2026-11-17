@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LAW LUCAS · Artist Page (demo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0b0710; --panel:#16101f; --text:#f6f1ff; --muted:#b8a9cc; --accent:#ff3d9a; --accent2:#22e3ff; --glow:rgba(255,61,154,.55); --line:rgba(255,255,255,.12); }
+  body[data-theme="sunset"] { --bg:#1a0b06; --panel:#2a130b; --text:#fff4ea; --muted:#e5bfa3; --accent:#ff8a1f; --accent2:#ffd23f; --glow:rgba(255,138,31,.55); }
+  body[data-theme="myspace"] { --bg:#0d1f3c; --panel:#13305c; --text:#ffffff; --muted:#a9c4ea; --accent:#ff6600; --accent2:#7fd3ff; --glow:rgba(255,102,0,.5); }
+  body[data-theme="clean"] { --bg:#f4f1ec; --panel:#ffffff; --text:#1a1622; --muted:#5d5568; --accent:#7a2cff; --accent2:#00a37a; --glow:rgba(122,44,255,.35); --line:rgba(0,0,0,.1); }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.55 Inter, system-ui, sans-serif; transition:background .6s, color .6s; }
+  a { color:var(--accent2); }
+  .wrap { width:100%; max-width:1180px; margin:0 auto; padding:0 16px; }
+
+  /* Tap-to-light-up entry */
+  #gate { position:fixed; inset:0; z-index:50; display:grid; place-items:center; background:#000; cursor:pointer; transition:opacity .9s; }
+  #gate.gone { opacity:0; pointer-events:none; }
+  #gate .g { text-align:center; }
+  #gate h1 { font:clamp(56px,12vw,140px)/.9 "Bebas Neue", sans-serif; margin:0; letter-spacing:.04em; color:#222; text-shadow:none; transition:color .8s, text-shadow .8s; }
+  #gate:hover h1 { color:#fff; text-shadow:0 0 18px var(--glow), 0 0 60px var(--glow); }
+  #gate p { color:#888; letter-spacing:.3em; text-transform:uppercase; font-size:13px; }
+  .pulse { display:inline-block; width:14px; height:14px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 0 var(--glow); animation:pulse 1.6s infinite; vertical-align:middle; margin-right:8px; }
+  @keyframes pulse { 70% { box-shadow:0 0 0 18px transparent; } 100% { box-shadow:0 0 0 0 transparent; } }
+  body.lit .hero { animation:lightup 1.4s ease-out; }
+  @keyframes lightup { from { filter:brightness(.2) saturate(0); } to { filter:none; } }
+
+  /* Hero */
+  .hero { position:relative; overflow:hidden; border-bottom:1px solid var(--line);
+    background:radial-gradient(900px 400px at 15% 20%, var(--glow), transparent 60%), radial-gradient(700px 380px at 90% 10%, color-mix(in srgb, var(--accent2) 45%, transparent), transparent 60%), var(--bg); }
+  .hero .wrap { display:flex; gap:28px; align-items:center; padding-top:44px; padding-bottom:36px; flex-wrap:wrap; }
+  .avatar { width:168px; height:168px; border-radius:50%; flex:none; object-fit:cover; border:4px solid var(--accent); box-shadow:0 0 30px var(--glow); background:var(--panel); }
+  .who { flex:1 1 420px; min-width:0; }
+  .name { font:clamp(54px,9vw,104px)/.9 "Bebas Neue", sans-serif; margin:0; letter-spacing:.03em; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .badge { display:inline-flex; align-items:center; gap:6px; font:600 13px Inter, sans-serif; letter-spacing:0; background:var(--accent2); color:#00131a; border-radius:999px; padding:4px 10px; }
+  .sub { color:var(--muted); margin:6px 0 10px; }
+  .acr { font-size:14px; color:var(--muted); }
+  .acr b { color:var(--accent); }
+  .tags { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 16px; }
+  .tag { border:1px solid var(--line); border-radius:999px; padding:3px 12px; font-size:13px; }
+  .btns { display:flex; gap:10px; flex-wrap:wrap; }
+  .btn { border:0; border-radius:12px; padding:11px 18px; font:800 14px Inter, sans-serif; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
+  .btn.primary { background:var(--accent); color:#fff; box-shadow:0 6px 24px var(--glow); }
+  .btn.ghost { background:transparent; color:var(--text); border:1px solid var(--line); }
+
+  /* Layout */
+  main .wrap { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:22px; padding-top:26px; padding-bottom:40px; }
+  @media (max-width:860px) { main .wrap { grid-template-columns:minmax(0,1fr); } }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:20px; margin-bottom:22px; }
+  h2 { font:32px/1 "Bebas Neue", sans-serif; letter-spacing:.05em; margin:0 0 14px; display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  h2 small { font:600 12px Inter, sans-serif; color:var(--muted); letter-spacing:0; }
+  .player { position:relative; aspect-ratio:16/9; border-radius:14px; overflow:hidden; background:#000; }
+  .player iframe, .player .poster { position:absolute; inset:0; width:100%; height:100%; border:0; }
+  .poster { background-size:cover; background-position:center; display:grid; place-items:center; cursor:pointer; }
+  .poster span { background:var(--accent); color:#fff; border-radius:999px; padding:12px 20px; font-weight:800; box-shadow:0 0 30px var(--glow); }
+  .np { display:flex; justify-content:space-between; gap:10px; margin-top:12px; flex-wrap:wrap; color:var(--muted); font-size:14px; }
+  .np b { color:var(--text); }
+  .videos { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; }
+  .vid { background:none; border:1px solid var(--line); border-radius:12px; padding:0; overflow:hidden; cursor:pointer; color:var(--text); text-align:left; }
+  .vid img { width:100%; aspect-ratio:16/9; object-fit:cover; display:block; }
+  .vid div { padding:8px 10px; font-size:13px; }
+  .vid div small { color:var(--muted); display:block; }
+  .vid.on { outline:2px solid var(--accent); }
+  .links { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+  .links a { display:block; text-decoration:none; color:var(--text); border:1px solid var(--line); border-radius:12px; padding:12px; font-weight:600; }
+  .links a small { display:block; color:var(--muted); font-weight:400; }
+  .stats { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  .stat { border:1px solid var(--line); border-radius:12px; padding:12px; }
+  .stat b { font:34px/1 "Bebas Neue", sans-serif; color:var(--accent); display:block; }
+  .stat span { font-size:13px; color:var(--muted); }
+  .top8 { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .friend { text-align:center; font-size:12px; }
+  .friend i { display:grid; place-items:center; aspect-ratio:1; border-radius:12px; font:28px "Bebas Neue", sans-serif; font-style:normal; color:#fff; margin-bottom:4px; }
+  ul.disc { list-style:none; padding:0; margin:0; }
+  ul.disc li { display:flex; justify-content:space-between; gap:10px; border-bottom:1px dashed var(--line); padding:7px 0; font-size:14px; }
+  ul.disc li span { color:var(--muted); }
+  .themes { display:flex; gap:8px; flex-wrap:wrap; }
+  .themes button { border:2px solid var(--line); border-radius:10px; padding:8px 12px; cursor:pointer; font:600 13px Inter, sans-serif; color:#fff; }
+  .themes button.on { border-color:var(--text); }
+  .note { font-size:12px; color:var(--muted); }
+  footer { border-top:1px solid var(--line); padding:20px 0 40px; color:var(--muted); font-size:13px; }
+  #book { position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; place-items:center; z-index:40; padding:16px; }
+  #book.show { display:grid; }
+  #book .card { max-width:460px; width:100%; }
+  #book label { display:block; font-size:13px; margin:10px 0 4px; color:var(--muted); }
+  #book input, #book textarea, #book select { width:100%; padding:10px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--text); font:inherit; }
+</style>
+</head>
+<body data-theme="bayou">
+
+<div id="gate" role="button" tabindex="0" aria-label="Tap to light up Law Lucas's page">
+  <div class="g"><h1>LAW LUCAS</h1><p><span class="pulse"></span>Tap to light up</p></div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <img class="avatar" src="https://image-cdn-ak.spotifycdn.com/image/ab676161000051741b0f6fbc1550eba925f3ee1d" alt="Law Lucas"
+         onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'avatar',textContent:''}))">
+    <div class="who">
+      <h1 class="name">LAW LUCAS <span class="badge" title="Verified artist">✔ Verified</span></h1>
+      <div class="sub">Laurick Bosley · Plaquemine, Louisiana · Managed by <b>Z-Connections</b></div>
+      <div class="acr"><b>L</b>iving <b>A</b>nd <b>W</b>inning · <b>L</b>iving <b>U</b>ndefeated, <b>C</b>ompetitive <b>A</b>nd <b>S</b>uccessful</div>
+      <div class="tags"><span class="tag">Southern Hip-Hop</span><span class="tag">Zydeco</span><span class="tag">Country Rap</span><span class="tag">R&amp;B</span><span class="tag">Feel-good</span></div>
+      <div class="btns">
+        <button class="btn primary" onclick="openBook()">🎤 Book Law</button>
+        <a class="btn ghost" href="https://open.spotify.com/artist/4v40jV5r6MKebzTz5zIRrB" target="_blank" rel="noopener">＋ Follow on Spotify</a>
+        <button class="btn ghost" onclick="share()">↗ Share page</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div>
+      <section class="card">
+        <h2>Now playing <small>Newest video</small></h2>
+        <div class="player" id="player"></div>
+        <div class="np"><span>▶ <b id="npTitle"></b></span><span id="npMeta"></span></div>
+      </section>
+
+      <section class="card">
+        <h2>More music <small>Plays on YouTube, so Law keeps the views</small></h2>
+        <div class="videos" id="videos"></div>
+      </section>
+
+      <section class="card">
+        <h2>Latest single <small>Middle Of The Club · 2026</small></h2>
+        <iframe style="border-radius:12px;width:100%;height:352px;border:0" title="Law Lucas on Spotify" loading="lazy"
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          src="https://open.spotify.com/embed/artist/4v40jV5r6MKebzTz5zIRrB?theme=0"></iframe>
+      </section>
+
+      <section class="card">
+        <h2>About Law</h2>
+        <p>Born and raised in Plaquemine, Louisiana, Law Lucas recorded his first song at ten, inspired by his father's DJ sets and the mixtape culture around him. He came up performing with Bow City Boys and JLT3, whose "Candy Girl" made noise across the region.</p>
+        <p>He went solo as Law Lucas in 2019 and has since released <i>Jet Skis &amp; Palm Trees</i>, <i>The LAW Lucas Story</i> and a run of singles that mix Southern roots, zydeco and feel-good energy. "Trail Ride" took over Southern clubs, and "Kuntry Gurl Zydeco" keeps the momentum going. In 2026 he joined Z-Connections for management.</p>
+      </section>
+    </div>
+
+    <aside>
+      <section class="card">
+        <h2>Make it yours <small>Demo: artists pick a look</small></h2>
+        <div class="themes" id="themes">
+          <button data-t="bayou" style="background:#2a1236">Bayou Neon</button>
+          <button data-t="sunset" style="background:#7a2e0b">Zydeco Sunset</button>
+          <button data-t="myspace" style="background:#13305c">Classic 2006</button>
+          <button data-t="clean" style="background:#7a2cff">Clean Light</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>By the numbers <small>Nov 17, 2026</small></h2>
+        <div class="stats">
+          <div class="stat"><b>13.2K</b><span>Instagram followers</span></div>
+          <div class="stat"><b>45K</b><span>views · Let Me See It</span></div>
+          <div class="stat"><b>31K</b><span>views · Kuntry Gurl Zydeco</span></div>
+          <div class="stat"><b>637</b><span>YouTube subscribers</span></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Listen everywhere</h2>
+        <div class="links">
+          <a href="https://open.spotify.com/artist/4v40jV5r6MKebzTz5zIRrB" target="_blank" rel="noopener">Spotify<small>LAW LUCAS</small></a>
+          <a href="https://music.apple.com/us/artist/law-lucas/1434330478" target="_blank" rel="noopener">Apple Music<small>Law Lucas</small></a>
+          <a href="https://youtube.com/@officiallawlucas" target="_blank" rel="noopener">YouTube<small>@officiallawlucas</small></a>
+          <a href="https://www.instagram.com/weluvlaw" target="_blank" rel="noopener">Instagram<small>@weluvlaw</small></a>
+          <a href="https://www.tiktok.com/@weluvlaw1" target="_blank" rel="noopener">TikTok<small>@weluvlaw1</small></a>
+          <a href="https://m.soundcloud.com/laurick-bosley" target="_blank" rel="noopener">SoundCloud<small>laurick-bosley</small></a>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Law's Top 8 <small>Demo: artists choose</small></h2>
+        <div class="top8" id="top8"></div>
+      </section>
+
+      <section class="card">
+        <h2>Discography</h2>
+        <ul class="disc">
+          <li>Middle Of The Club <span>Single · 2026</span></li>
+          <li>Young, Wild &amp; Free <span>Single · 2026</span></li>
+          <li>Kuntry Gurl Zydeco <span>Single · 2026</span></li>
+          <li>Country Girl <span>Single · 2026</span></li>
+          <li>Big Spender <span>Single · 2025</span></li>
+          <li>El Chapo Wannabeez <span>Single · 2025</span></li>
+          <li>Trail Ride (feat. LA Tray) <span>Single · 2024</span></li>
+          <li>The LAW Lucas Story <span>Album · 2020</span></li>
+          <li>Jet Skis and Palm Trees <span>Album · 2019</span></li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Shows</h2>
+        <p class="note">No dates posted yet. In the real platform, dates added once show here and on Bandsintown.</p>
+        <h2 style="margin-top:18px">For bookers</h2>
+        <p class="note">EPK download, stage plot and rider go here (demo). Booking: Z-Connections, <a href="https://z-connections.com" target="_blank" rel="noopener">z-connections.com</a></p>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<footer><div class="wrap">Demo artist page · built by Z-Connections (working name: artist-platform). Music plays from YouTube and Spotify; nothing is hosted here.</div></footer>
+
+<div id="book" onclick="if(event.target===this)this.classList.remove('show')">
+  <form class="card" onsubmit="event.preventDefault();this.innerHTML='<h2>Request sent (demo)</h2><p class=note>In the real platform this goes to Z-Connections and the artist.</p>';">
+    <h2>Book Law Lucas</h2>
+    <label>Your name / venue</label><input required>
+    <label>Event date</label><input type="date">
+    <label>Type</label><select><option>Club / venue show</option><option>Festival</option><option>Private event</option><option>Feature / collab</option></select>
+    <label>Message</label><textarea rows="3"></textarea>
+    <p class="note">Demo only: nothing is sent.</p>
+    <button class="btn primary" type="submit">Send request</button>
+  </form>
+</div>
+
+<script>
+const VIDEOS = [
+  { id:"RLaP3H9xtzE", t:"Young, Wild & Free", m:"Newest · 2026" },
+  { id:"0u5zaw6z0FI", t:"Kuntry Gurl Zydeco", m:"31K views" },
+  { id:"mqUHk_yV8b0", t:"Let Me See It (feat. KayyKilo)", m:"45K views" },
+  { id:"6EK_OYgNmj8", t:"El Chapo Wannabeez", m:"7.4K views" },
+  { id:"E10q_dTcUC4", t:"Trail Ride (feat. LA Tray)", m:"2.5K views" },
+];
+const TOP8 = [["LA Tray","#ff3d9a"],["KayyKilo","#22e3ff"],["Mikobmurking","#ff8a1f"],["Litflame","#7a2cff"],["Jon Do","#00a37a"],["JLT3","#e0b100"],["Bow City Boys","#ff5050"],["Z-Connections","#444"]];
+
+const player = document.getElementById('player');
+function load(i, autoplay) {
+  const v = VIDEOS[i];
+  document.querySelectorAll('.vid').forEach((b, j) => b.classList.toggle('on', j === i));
+  document.getElementById('npTitle').textContent = v.t;
+  document.getElementById('npMeta').textContent = v.m;
+  if (autoplay) {
+    player.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${v.id}?autoplay=1&rel=0" title="${v.t}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+  } else {
+    player.innerHTML = `<div class="poster" style="background-image:url(https://i.ytimg.com/vi/${v.id}/hqdefault.jpg)"><span>▶ Play</span></div>`;
+    player.firstChild.onclick = () => load(i, true);
+  }
+}
+document.getElementById('videos').innerHTML = VIDEOS.map((v, i) =>
+  `<button class="vid" data-i="${i}"><img src="https://i.ytimg.com/vi/${v.id}/mqdefault.jpg" alt=""><div>${v.t}<small>${v.m}</small></div></button>`).join('');
+document.querySelectorAll('.vid').forEach(b => b.onclick = () => load(+b.dataset.i, true));
+document.getElementById('top8').innerHTML = TOP8.map(([n, c]) =>
+  `<div class="friend"><i style="background:${c}">${n.split(' ').map(w => w[0]).join('').slice(0,2)}</i>${n}</div>`).join('');
+load(0, false);
+
+const gate = document.getElementById('gate');
+function lightUp() { gate.classList.add('gone'); document.body.classList.add('lit'); load(0, true); }
+gate.onclick = lightUp;
+gate.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') lightUp(); };
+
+function setTheme(t) {
+  document.body.dataset.theme = t;
+  document.querySelectorAll('#themes button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  try { localStorage.setItem('law-theme', t); } catch (e) {}
+}
+document.querySelectorAll('#themes button').forEach(b => b.onclick = () => setTheme(b.dataset.t));
+try { setTheme(localStorage.getItem('law-theme') || 'bayou'); } catch (e) { setTheme('bayou'); }
+
+function openBook() { document.getElementById('book').classList.add('show'); }
+function share() {
+  if (navigator.share) navigator.share({ title: 'LAW LUCAS', url: location.href }).catch(() => {});
+  else navigator.clipboard?.writeText(location.href).then(() => alert('Link copied'));
+}
+</script>
+</body>
+</html>
