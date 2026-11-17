@@ -77,6 +77,19 @@
   .top8 { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
   .friend { text-align:center; font-size:12px; }
   .friend i { display:grid; place-items:center; aspect-ratio:1; border-radius:12px; font:28px "Bebas Neue", sans-serif; font-style:normal; color:#fff; margin-bottom:4px; }
+  .filters { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:12px 0; }
+  .filters input { flex:1 1 180px; min-width:0; padding:9px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--text); font:inherit; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .chips button { border:1px solid var(--line); background:none; color:var(--text); border-radius:999px; padding:5px 11px; cursor:pointer; font:600 12px Inter, sans-serif; }
+  .chips button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  ul.songs { list-style:none; padding:0; margin:0; }
+  ul.songs li { display:flex; align-items:center; gap:12px; padding:9px 4px; border-bottom:1px dashed var(--line); }
+  ul.songs li button { flex:none; width:36px; height:36px; border-radius:50%; border:0; background:var(--accent); color:#fff; cursor:pointer; font-size:14px; }
+  ul.songs li.on { background:color-mix(in srgb, var(--accent) 14%, transparent); border-radius:10px; }
+  ul.songs .st { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+  ul.songs .sm { color:var(--muted); font-size:13px; flex:none; }
+  .songplayer iframe { width:100%; height:152px; border:0; border-radius:12px; margin-bottom:6px; }
+  .songplayer:empty { display:none; }
   ul.disc { list-style:none; padding:0; margin:0; }
   ul.disc li { display:flex; justify-content:space-between; gap:10px; border-bottom:1px dashed var(--line); padding:7px 0; font-size:14px; }
   ul.disc li span { color:var(--muted); }
@@ -127,8 +140,19 @@
       </section>
 
       <section class="card">
-        <h2>More music <small>Plays on YouTube, so Law keeps the views</small></h2>
+        <h2>All videos <small id="vidCount">Plays on YouTube, so Law keeps the views</small></h2>
         <div class="videos" id="videos"></div>
+      </section>
+
+      <section class="card" id="music">
+        <h2>All music <small id="songCount"></small></h2>
+        <div id="songPlayer" class="songplayer"></div>
+        <div class="filters">
+          <input id="songSearch" type="search" placeholder="Search songs" aria-label="Search songs">
+          <div class="chips" id="yearChips"></div>
+        </div>
+        <ul class="songs" id="songs"></ul>
+        <p class="note">Every song plays from Spotify, so Law keeps the streams. Also on <a href="https://music.apple.com/us/artist/law-lucas/1434330478" target="_blank" rel="noopener">Apple Music</a>.</p>
       </section>
 
       <section class="card">
@@ -183,20 +207,6 @@
         <div class="top8" id="top8"></div>
       </section>
 
-      <section class="card">
-        <h2>Discography</h2>
-        <ul class="disc">
-          <li>Middle Of The Club <span>Single · 2026</span></li>
-          <li>Young, Wild &amp; Free <span>Single · 2026</span></li>
-          <li>Kuntry Gurl Zydeco <span>Single · 2026</span></li>
-          <li>Country Girl <span>Single · 2026</span></li>
-          <li>Big Spender <span>Single · 2025</span></li>
-          <li>El Chapo Wannabeez <span>Single · 2025</span></li>
-          <li>Trail Ride (feat. LA Tray) <span>Single · 2024</span></li>
-          <li>The LAW Lucas Story <span>Album · 2020</span></li>
-          <li>Jet Skis and Palm Trees <span>Album · 2019</span></li>
-        </ul>
-      </section>
 
       <section class="card">
         <h2>Shows</h2>
@@ -223,13 +233,52 @@
 </div>
 
 <script>
+// window.NO_EMBEDS = true (set by the phone version) opens YouTube/Spotify instead of playing inside the page.
+const EMBEDS = !window.NO_EMBEDS;
 const VIDEOS = [
-  { id:"RLaP3H9xtzE", t:"Young, Wild & Free", m:"Newest · 2026" },
+  { id:"RLaP3H9xtzE", t:"Young, Wild & Free", m:"Newest · 660 views" },
   { id:"0u5zaw6z0FI", t:"Kuntry Gurl Zydeco", m:"31K views" },
   { id:"mqUHk_yV8b0", t:"Let Me See It (feat. KayyKilo)", m:"45K views" },
+  { id:"2bVoLZj0f-Y", t:"H.U.S.T.L.E.R", m:"12K views" },
   { id:"6EK_OYgNmj8", t:"El Chapo Wannabeez", m:"7.4K views" },
+  { id:"bZkW1_Uifqk", t:"Call Me Daddy", m:"6.5K views" },
+  { id:"hwcGLsjooMg", t:"Stayed Down", m:"5.7K views" },
   { id:"E10q_dTcUC4", t:"Trail Ride (feat. LA Tray)", m:"2.5K views" },
+  { id:"CIGrPucDuro", t:"Direction", m:"977 views" },
+  { id:"SGqBFxS5v-g", t:"#TikTokTuesday live at Blazing Cajun", m:"Live · 1 hour" },
 ];
+// Spotify releases (album ids), newest first. Collected 2026-11-17 from his Spotify discography.
+const SONGS = [
+  ["0talbmN0OkGfbgKjcFn1hK","Middle Of The Club",2026,"Single"],
+  ["7zRbaCjFog2tjxRm531cXE","Young, Wild & Free",2026,"Single"],
+  ["59xEj4dpeaKmkoyemgi7S0","Kuntry Gurl Zydeco",2026,"Single"],
+  ["2oCoXUpWfw8zwMQ3x86TZ4","Country Girl",2026,"Single"],
+  ["32gjjI5RGjvLp937PWvNlU","Big Spender",2025,"Single"],
+  ["7drHraCg7lPDRwO4zvvRhK","Real Woman Tendacies",2025,"Single"],
+  ["5Oonu6tKrh7kGBq6X8IRto","Still Love Me",2025,"Single"],
+  ["2opaaaYTBBg94WS9wXEQuD","Who Riding With Me",2025,"Single"],
+  ["0ipe7uN3bSwbOifs38U4JZ","El Chapo Wannabeez",2025,"Single"],
+  ["36DE9IIkwbpcGjSAHXYgBj","Direction",2025,"Single"],
+  ["3ZquefS7aTvw0QoOVov5Fi","Wall 2 Wall (feat. Mikobmurking)",2025,"Single"],
+  ["54Sk6ZOuVfrSJPe05s8yuP","Cowgirl",2025,"Single"],
+  ["42uUe4U7ZXGyn9eUubyHFz","Zydeco With It",2024,"Single"],
+  ["21nE5WeDCFa6Imz2ESwatz","(Sauce) Project Pat & Lil Flip",2024,"Single"],
+  ["29Vanca8VOfgngkFsoiepp","Cups Up",2024,"Single"],
+  ["0YBKpybJiRHDcWR7fBVHiW","Mikobmurking (Creeper)",2024,"Single"],
+  ["7I9CiQnvYwq86zQQOGDZ4g","MikoBMurking (UNLV)",2024,"Single"],
+  ["7azyw9kz0u1ann68VAzmNn","Jimmy Stick",2024,"Single"],
+  ["4tCfGh17FhggkBTtuXzTIS","Lil Fine Ass",2024,"Single"],
+  ["36Ed9P9UsCv8tHc4oOXeOl","Trail Ride (feat. LA Tray)",2024,"Single"],
+  ["1X8nSyavWEMwsVFbvf57pP","Let Me See It (Special Version)",2023,"Single"],
+  ["6XhG7Pj989utdP6von4W1G","Let Me See It",2023,"Single"],
+  ["27iGTglxIE2H9ZJnorWbYq","Respect",2023,"Single"],
+  ["60dpdqHEmf9JghwcKQOD8S","Stayed Down",2023,"Single"],
+  ["6U52wuvpSzNfmSAcjfiAK8","H.U.S.T.L.E.R",2023,"Single"],
+  ["3d4YKqvh4Aq2xYMaTD48Nd","Issa Vybe (Radio Edit)",2022,"Single"],
+  ["5oYZx0svHJL0bOOepV8lg5","Big Energy",2021,"Single"],
+  ["5SJgPw2KFMRxmjFoFj4dBq","The LAW Lucas Story",2020,"Album"],
+  ["4DSJnQohLnmpsHggM7rky9","Jet Skis and Palm Trees",2019,"Album"],
+].map(([id, t, y, k]) => ({ id, t, y, k }));
 const TOP8 = [["LA Tray","#ff3d9a"],["KayyKilo","#22e3ff"],["Mikobmurking","#ff8a1f"],["Litflame","#7a2cff"],["Jon Do","#00a37a"],["JLT3","#e0b100"],["Bow City Boys","#ff5050"],["Z-Connections","#444"]];
 
 const player = document.getElementById('player');
@@ -238,6 +287,7 @@ function load(i, autoplay) {
   document.querySelectorAll('.vid').forEach((b, j) => b.classList.toggle('on', j === i));
   document.getElementById('npTitle').textContent = v.t;
   document.getElementById('npMeta').textContent = v.m;
+  if (autoplay && !EMBEDS) { window.open(`https://www.youtube.com/watch?v=${v.id}`, '_blank', 'noopener'); return load(i, false); }
   if (autoplay) {
     player.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${v.id}?autoplay=1&rel=0" title="${v.t}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
   } else {
@@ -253,7 +303,32 @@ document.getElementById('top8').innerHTML = TOP8.map(([n, c]) =>
 load(0, false);
 
 const gate = document.getElementById('gate');
-function lightUp() { gate.classList.add('gone'); document.body.classList.add('lit'); load(0, true); }
+function lightUp() { gate.classList.add('gone'); document.body.classList.add('lit'); if (EMBEDS) load(0, true); }
+
+// All music: search, year filter, Spotify player
+document.getElementById('vidCount').textContent = `${VIDEOS.length} videos · plays on YouTube, so Law keeps the views`;
+document.getElementById('songCount').textContent = `${SONGS.filter(s => s.k === 'Single').length} singles · ${SONGS.filter(s => s.k === 'Album').length} albums`;
+let songYear = 'All', songQ = '';
+const years = ['All', ...new Set(SONGS.map(s => s.y))];
+const chips = document.getElementById('yearChips');
+chips.innerHTML = years.map(y => `<button data-y="${y}">${y}</button>`).join('');
+chips.onclick = e => { const y = e.target.dataset.y; if (y) { songYear = y; renderSongs(); } };
+document.getElementById('songSearch').oninput = e => { songQ = e.target.value.toLowerCase(); renderSongs(); };
+function renderSongs() {
+  chips.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.y == songYear));
+  const list = SONGS.filter(s => (songYear === 'All' || s.y == songYear) && s.t.toLowerCase().includes(songQ));
+  document.getElementById('songs').innerHTML = list.map(s =>
+    `<li data-id="${s.id}"><button aria-label="Play ${s.t}">▶</button><span class="st">${s.t}</span><span class="sm">${s.k} · ${s.y}</span></li>`).join('')
+    || '<li><span class="sm">No songs match.</span></li>';
+}
+document.getElementById('songs').onclick = e => {
+  const li = e.target.closest('li[data-id]'); if (!li) return;
+  const url = `https://open.spotify.com/album/${li.dataset.id}`;
+  if (!EMBEDS) { window.open(url, '_blank', 'noopener'); return; }
+  document.querySelectorAll('ul.songs li').forEach(x => x.classList.toggle('on', x === li));
+  document.getElementById('songPlayer').innerHTML = `<iframe src="https://open.spotify.com/embed/album/${li.dataset.id}?utm_source=generator" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Spotify player"></iframe>`;
+};
+renderSongs();
 gate.onclick = lightUp;
 gate.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') lightUp(); };
 
