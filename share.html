@@ -299,6 +299,7 @@ function load(i, autoplay) {
   document.getElementById('npTitle').textContent = v.t;
   document.getElementById('npMeta').textContent = v.m;
   if (autoplay && !EMBEDS) { window.open(`https://www.youtube.com/watch?v=${v.id}`, '_blank', 'noopener'); return load(i, false); }
+  if (autoplay && typeof spotify !== 'undefined' && spotify) spotify.pause();
   if (autoplay) {
     player.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${v.id}?autoplay=1&rel=0" title="${v.t}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
   } else {
@@ -332,12 +333,35 @@ function renderSongs() {
     `<li data-id="${s.id}"><button aria-label="Play ${s.t}">▶</button><span class="st">${s.t}</span><span class="sm">${s.k} · ${s.y}</span></li>`).join('')
     || '<li><span class="sm">No songs match.</span></li>';
 }
+// Spotify's iFrame API lets the page start playback on the click (one tap = song plays).
+let spotify = null, pendingUri = null;
+window.onSpotifyIframeApiReady = IFrameAPI => {
+  const box = document.getElementById('songPlayer');
+  box.innerHTML = '<div id="spEmbed"></div>';
+  IFrameAPI.createController(document.getElementById('spEmbed'), { width: '100%', height: 152, uri: `spotify:album:${SONGS[0].id}` }, c => {
+    spotify = c;
+    c.addListener('ready', () => { if (pendingUri) { c.play(); pendingUri = null; } });
+  });
+};
+if (EMBEDS) {
+  const s = document.createElement('script');
+  s.src = 'https://open.spotify.com/embed/iframe-api/v1'; s.async = true;
+  document.body.appendChild(s);
+}
+function stopVideo() { if (document.querySelector('#player iframe')) load(VIDEOS.findIndex(v => v.t === document.getElementById('npTitle').textContent), false); }
+function playSong(id) {
+  stopVideo();
+  const uri = `spotify:album:${id}`;
+  if (spotify) { spotify.loadUri(uri); pendingUri = uri; spotify.play(); }
+  else {  // API not loaded (blocked or offline): plain player, one more tap needed
+    document.getElementById('songPlayer').innerHTML = `<iframe src="https://open.spotify.com/embed/album/${id}?utm_source=generator" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" title="Spotify player"></iframe>`;
+  }
+}
 document.getElementById('songs').onclick = e => {
   const li = e.target.closest('li[data-id]'); if (!li) return;
-  const url = `https://open.spotify.com/album/${li.dataset.id}`;
-  if (!EMBEDS) { window.open(url, '_blank', 'noopener'); return; }
+  if (!EMBEDS) { window.open(`https://open.spotify.com/album/${li.dataset.id}`, '_blank', 'noopener'); return; }
   document.querySelectorAll('ul.songs li').forEach(x => x.classList.toggle('on', x === li));
-  document.getElementById('songPlayer').innerHTML = `<iframe src="https://open.spotify.com/embed/album/${li.dataset.id}?utm_source=generator" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Spotify player"></iframe>`;
+  playSong(li.dataset.id);
 };
 renderSongs();
 gate.onclick = lightUp;
