@@ -58,7 +58,16 @@
   .results { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.05fr); gap:16px; align-items:start; padding-bottom:30px; }
   @media (max-width:860px) { .results { grid-template-columns:minmax(0,1fr); } }
   #map { height:calc(100vh - 120px); min-height:360px; border-radius:18px; border:1px solid var(--line); position:sticky; top:76px; background:var(--panel); }
-  @media (max-width:860px) { #map { position:relative; top:0; height:340px; } }
+  @media (max-width:860px) { #map { position:sticky; top:calc(62px + env(safe-area-inset-top, 0px)); height:36vh; min-height:220px; z-index:500; box-shadow:0 10px 20px var(--bg); } }
+  .card { scroll-margin-top:90px; }
+  @media (max-width:860px) { .card { scroll-margin-top:calc(74px + 36vh + env(safe-area-inset-top, 0px)); } }
+  .card.seen h3::after { content:"✓ Reviewed"; margin-left:8px; font:800 10px Inter, sans-serif; letter-spacing:.08em; text-transform:uppercase; color:#062b1c; background:var(--live); border-radius:999px; padding:2px 7px; vertical-align:middle; white-space:nowrap; }
+  .pp { min-width:190px; }
+  .leaflet-bottom.leaflet-left { margin-bottom:18px; }
+  .mapnav { display:flex; gap:6px; align-items:center; background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:5px; box-shadow:0 4px 14px rgba(0,0,0,.5); }
+  .mapnav button { white-space:nowrap; flex:1; border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:8px; padding:6px 8px; font:800 12px Inter, sans-serif; cursor:pointer; }
+  .mapnav button:disabled { opacity:.35; cursor:default; }
+  .mapnav .cnt { font:600 12px Inter, sans-serif; color:var(--muted); min-width:58px; text-align:center; font-variant-numeric:tabular-nums; }
   .leaflet-container { font:inherit; }
   .dark-tiles { filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.6); }
   .leaflet-popup-content-wrapper, .leaflet-popup-tip { background:var(--panel2); color:var(--text); }
@@ -182,16 +191,44 @@ const colorOf = k => (TYPES.find(t => t.k && t.k.includes(k)) || {c:'#b8a9cc'}).
 const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1) + 'M' : n >= 1e3 ? Math.round(n/1e3) + 'K' : String(n);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+let current = -1;
 const state = { data:null, center:null, label:'', radius:1, type:'all', shown:40 };
 const $ = id => document.getElementById(id);
+const keyOf = v => v.n + '@' + v.lat.toFixed(4) + ',' + v.lon.toFixed(4);
+let seen = new Set();
+try { seen = new Set(JSON.parse(localStorage.getItem('venues-seen') || '[]')); } catch (e) {}
+function markSeen(i) {
+  const v = state.hits && state.hits[i]; if (!v) return;
+  seen.add(keyOf(v));
+  try { localStorage.setItem('venues-seen', JSON.stringify([...seen])); } catch (e) {}
+  const c = $('c' + i); if (c) c.classList.add('seen');
+}
 
 // Map
-const map = L.map('map', { zoomControl:true, scrollWheelZoom:false }).setView([40.65, -73.95], 12);
+const map = L.map('map', { zoomControl:true, scrollWheelZoom:false });
+map.attributionControl.setPrefix(false);
+map.setView([40.65, -73.95], 12);
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom:19, className:'dark-tiles',
-  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 const layer = L.layerGroup().addTo(map);
+// Fixed Previous / Next bar on the map (same place every time)
+const NavCtl = L.Control.extend({ onAdd() {
+  const d = L.DomUtil.create('div', 'mapnav'); d.id = 'mapnav'; d.hidden = true;
+  d.innerHTML = '<button type="button" data-step="-1">‹ Previous</button><span class="cnt" id="navcnt"></span><button type="button" data-step="1">Next ›</button>';
+  L.DomEvent.disableClickPropagation(d);
+  return d;
+} });
+new NavCtl({ position:'bottomleft' }).addTo(map);
+function updateNav() {
+  const n = state.hits ? state.hits.length : 0, nav = $('mapnav');
+  nav.hidden = !(current >= 0 && n);
+  if (nav.hidden) return;
+  $('navcnt').textContent = (current + 1) + ' of ' + n;
+  nav.querySelector('[data-step="-1"]').disabled = current <= 0;
+  nav.querySelector('[data-step="1"]').disabled = current >= n - 1;
+}
 let circle = null, homeMarker = null;
 const markers = new Map();
 
@@ -205,15 +242,15 @@ function miles(a, b, c, d) {
 RADII.forEach(r => {
   const b = document.createElement('button'); b.type = 'button';
   b.textContent = r < 1 ? '½ mile' : r + (r === 1 ? ' mile' : ' miles'); b.dataset.r = r;
-  b.onclick = () => { state.radius = r; state.shown = 40; render(); };
+  b.onclick = () => { state.radius = r; state.shown = 40; current = -1; render(); };
   $('radius').append(b);
 });
 TYPES.forEach(t => {
   const b = document.createElement('button'); b.type = 'button'; b.textContent = t.t; b.dataset.t = t.id;
-  b.onclick = () => { state.type = t.id; state.shown = 40; render(); };
+  b.onclick = () => { state.type = t.id; state.shown = 40; current = -1; render(); };
   $('types').append(b);
 });
-$('onlyContact').onchange = $('onlyShows').onchange = () => { state.shown = 40; render(); };
+$('onlyContact').onchange = $('onlyShows').onchange = () => { state.shown = 40; current = -1; render(); };
 
 async function load(area) {
   const res = await fetch('data/' + area + '.json');
@@ -221,7 +258,7 @@ async function load(area) {
 }
 
 function setCenter(lat, lon, label, zipInfo) {
-  state.center = [lat, lon]; state.label = label; state.zipInfo = zipInfo; state.shown = 40;
+  state.center = [lat, lon]; state.label = label; state.zipInfo = zipInfo; state.shown = 40; current = -1;
   history.replaceState(null, '', label.startsWith('ZIP') ? '#zip-' + label.slice(4) : '#here');
   render(true);
 }
@@ -260,6 +297,9 @@ function render(fit) {
     .filter(v => v.d <= state.radius)
     .sort((a, b) => a.d - b.d);
   const hits = all.filter(v => (!t.k || t.k.includes(v.k)) && (!onlyC || v.p || v.e.length) && (!onlyS || v.s));
+  state.hits = hits;
+  if (current >= hits.length) current = -1;
+  updateNav();
 
   // Summary
   const near = state.zipInfo;
@@ -277,8 +317,8 @@ function render(fit) {
   homeMarker = L.marker(state.center, { icon: L.divIcon({ className:'', html:'<div class="home-pin"></div>', iconSize:[20,20] }), title:state.label }).addTo(map);
   hits.forEach((v, i) => {
     const m = L.marker([v.lat, v.lon], { icon: L.divIcon({ className:'', html:`<div class="pin" style="background:${colorOf(v.k)}"></div>`, iconSize:[14,14] }), title:v.n })
-      .bindPopup(`<b>${esc(v.n)}</b>${esc(v.k)} · ${v.d.toFixed(1)} mi<br>${esc(v.a)}`)
-      .on('click', () => focusCard(i));
+      .bindPopup(() => popupHtml(i), { autoPanPaddingTopLeft:[10, 10] })
+      .on('click', () => selectVenue(i, { pan:false }));
     m.addTo(layer); markers.set(i, m);
   });
   if (fit) map.fitBounds(circle.getBounds(), { padding:[10,10] });
@@ -302,7 +342,7 @@ function card(v, i) {
   const web = v.w ? `<a href="https://${esc(v.w)}" target="_blank" rel="noopener">${esc(v.w.length > 42 ? v.w.slice(0, 40) + '…' : v.w)}</a>` : '<span class="none">Not listed</span>';
   const ig = v.ig ? `<dt>Instagram</dt><dd><a href="https://instagram.com/${esc(v.ig.slice(1))}" target="_blank" rel="noopener">${esc(v.ig)}</a></dd>` : '';
   const tags = v.s ? `<div class="tags">${v.s.split(', ').map(s => `<span>${esc(s)}</span>`).join('')}</div>` : '';
-  return `<article class="card" id="c${i}">
+  return `<article class="card${seen.has(keyOf(v)) ? ' seen' : ''}" id="c${i}">
     <div class="top">
       <div><h3 data-i="${i}">${esc(v.n)}</h3><div class="kind"><i style="background:${colorOf(v.k)}"></i>${esc(v.k)}${v.h ? ' · ' + esc(v.h) : ''}</div></div>
       <div class="dist">${v.d.toFixed(1)}<small> mi</small></div>
@@ -319,12 +359,37 @@ function card(v, i) {
   </article>`;
 }
 
-function focusCard(i) {
-  if (i >= state.shown) { state.shown = i + 1; render(); }
-  document.querySelectorAll('.card.hi').forEach(c => c.classList.remove('hi'));
-  const c = $('c' + i); if (!c) return;
-  c.classList.add('hi'); c.scrollIntoView({ behavior:'smooth', block:'center' });
+function popupHtml(i) {
+  const v = state.hits[i];
+  return `<div class="pp"><b>${esc(v.n)}</b>${esc(v.k)} · ${v.d.toFixed(1)} mi<br>${esc(v.a)}
+</div>`;
 }
+
+// One place to open a venue: highlight its card, mark it reviewed, show it on the map.
+function selectVenue(i, { pan = true, scroll = true } = {}) {
+  if (!state.hits || i < 0 || i >= state.hits.length) return;
+  if (i >= state.shown) { state.shown = Math.ceil((i + 1) / 40) * 40; render(); }
+  current = i;
+  updateNav();
+  document.querySelectorAll('.card.hi').forEach(c => c.classList.remove('hi'));
+  const c = $('c' + i);
+  if (c) { c.classList.add('hi'); if (scroll) c.scrollIntoView({ behavior:'smooth', block:'start' }); }
+  markSeen(i);
+  const m = markers.get(i);
+  if (m) {
+    if (pan) map.setView(m.getLatLng(), Math.max(map.getZoom(), 16));
+    m.openPopup();
+  }
+}
+
+// Previous / Next buttons inside the map pop-up
+// (the map stops clicks inside its pop-up, so listen on the whole page, before the map does)
+document.addEventListener('click', e => {
+  const b = e.target.closest('#mapnav [data-step]');
+  if (!b || b.disabled) return;
+  e.preventDefault();
+  setTimeout(() => selectVenue(current + +b.dataset.step), 0);
+}, true);
 
 $('list').addEventListener('click', e => {
   const cp = e.target.closest('[data-copy]');
@@ -333,12 +398,9 @@ $('list').addEventListener('click', e => {
     return;
   }
   const s = e.target.closest('[data-show], h3[data-i]');
-  if (s) {
-    const i = +(s.dataset.show ?? s.dataset.i), m = markers.get(i);
-    if (m) { map.setView(m.getLatLng(), 16); m.openPopup(); if (window.innerWidth <= 860) $('map').scrollIntoView({ behavior:'smooth' }); }
-    document.querySelectorAll('.card.hi').forEach(c => c.classList.remove('hi'));
-    $('c' + i).classList.add('hi');
-  }
+  if (s) { selectVenue(+(s.dataset.show ?? s.dataset.i), { scroll:false }); return; }
+  const a = e.target.closest('.card a');  // Call, Email, Directions, website: count as reviewed
+  if (a) markSeen(+a.closest('.card').id.slice(1));
 });
 
 $('find').onsubmit = e => { e.preventDefault(); findZip($('zip').value.trim()); };
