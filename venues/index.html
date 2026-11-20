@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Venues Near You</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  /* Layout: top bar, search panel (area + ZIP), filter chips, then map + result list side by side (stacked on phone). */
+  :root { --bg:#0b0710; --panel:#16101f; --panel2:#1e1529; --text:#f6f1ff; --muted:#b8a9cc; --accent:#ff3d9a; --accent2:#22e3ff; --glow:rgba(255,61,154,.5); --line:rgba(255,255,255,.12); --live:#3ddc97; --next:#ffd23f; color-scheme:dark; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.5 Inter, system-ui, sans-serif; padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px)); }
+  @media (min-width:861px) { body { padding-bottom:0; } }
+  a { color:inherit; }
+  .wrap { width:100%; max-width:1180px; margin:0 auto; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+  :focus-visible { outline:2px solid var(--accent2); outline-offset:2px; }
+
+  .bar { position:sticky; top:0; z-index:1000; background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); padding-top:env(safe-area-inset-top, 0px); }
+  .bar .wrap { display:flex; align-items:center; gap:14px; padding-block:12px; }
+  .logo { font:30px/1 "Bebas Neue", sans-serif; letter-spacing:.06em; text-decoration:none; display:flex; align-items:center; gap:8px; white-space:nowrap; }
+  .logo i { width:30px; height:30px; border-radius:9px; background:var(--accent); display:grid; place-items:center; font-style:normal; color:#fff; box-shadow:0 0 18px var(--glow); }
+  .back { margin-left:auto; text-decoration:none; font-weight:600; font-size:14px; color:var(--muted); padding:8px 12px; border-radius:10px; white-space:nowrap; }
+  .back:hover { color:var(--text); background:var(--panel); }
+
+  .hero { background:radial-gradient(700px 300px at 0% 0%, color-mix(in srgb, var(--live) 30%, transparent), transparent 60%), radial-gradient(700px 300px at 100% 0%, var(--glow), transparent 60%); border-bottom:1px solid var(--line); }
+  .hero .wrap { padding-block:30px 22px; }
+  .eyebrow { font:800 12px Inter, sans-serif; letter-spacing:.18em; text-transform:uppercase; color:var(--live); }
+  h1 { font:clamp(48px,9vw,96px)/.9 "Bebas Neue", sans-serif; margin:8px 0 10px; letter-spacing:.02em; }
+  .hero p { color:var(--muted); margin:0 0 18px; }
+  form.find { display:flex; gap:10px; flex-wrap:wrap; align-items:stretch; }
+  .field { display:flex; flex-direction:column; gap:4px; }
+  .field label { font:800 11px Inter, sans-serif; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+  select, input[type=text] { padding:13px 14px; border-radius:14px; border:1px solid var(--line); background:var(--panel); color:var(--text); font:inherit; min-width:0; }
+  #zip { width:150px; font-variant-numeric:tabular-nums; letter-spacing:.08em; }
+  .btn { border:0; border-radius:14px; padding:13px 18px; font:800 15px Inter, sans-serif; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }
+  .btn.primary { background:var(--accent); color:#fff; box-shadow:0 6px 24px var(--glow); }
+  .btn.ghost { background:transparent; color:var(--text); border:1px solid var(--line); }
+  .btn.sm { padding:7px 11px; font-size:13px; border-radius:10px; }
+  .actions { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; }
+  .msg { margin-top:12px; min-height:1.5em; color:var(--next); font-weight:600; }
+
+  .filters { display:flex; flex-direction:column; gap:10px; margin-top:18px; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .chips b { font:800 11px Inter, sans-serif; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); width:70px; }
+  .chips button { border:1px solid var(--line); background:none; color:var(--text); border-radius:999px; padding:6px 13px; cursor:pointer; font:600 13px Inter, sans-serif; }
+  .chips button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .chips label { font-size:13px; color:var(--muted); display:flex; gap:6px; align-items:center; cursor:pointer; }
+
+  .summary { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px; margin:20px 0 14px; }
+  @media (max-width:700px) { .summary { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+  .stat { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:12px 14px; }
+  .stat b { font:34px/1 "Bebas Neue", sans-serif; color:var(--accent); display:block; font-variant-numeric:tabular-nums; }
+  .stat span { font-size:13px; color:var(--muted); }
+
+  .results { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.05fr); gap:16px; align-items:start; padding-bottom:30px; }
+  @media (max-width:860px) { .results { grid-template-columns:minmax(0,1fr); } }
+  #map { height:calc(100vh - 120px); min-height:360px; border-radius:18px; border:1px solid var(--line); position:sticky; top:76px; background:var(--panel); }
+  @media (max-width:860px) { #map { position:relative; top:0; height:340px; } }
+  .leaflet-container { font:inherit; }
+  .dark-tiles { filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.6); }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip { background:var(--panel2); color:var(--text); }
+  .leaflet-popup-content b { display:block; font-size:15px; }
+  .pin { width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 8px rgba(0,0,0,.6); }
+  .home-pin { width:20px; height:20px; border-radius:50%; background:var(--accent2); border:3px solid #fff; box-shadow:0 0 16px var(--accent2); }
+
+  .list { display:flex; flex-direction:column; gap:10px; min-width:0; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:14px 16px; transition:border-color .2s, background .2s; }
+  .card.hi { border-color:var(--accent); background:var(--panel2); }
+  .card .top { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+  .card h3 { margin:0; font-size:18px; line-height:1.25; cursor:pointer; }
+  .dist { font:28px/1 "Bebas Neue", sans-serif; color:var(--accent2); white-space:nowrap; }
+  .dist small { font:600 11px Inter, sans-serif; color:var(--muted); }
+  .kind { display:inline-flex; align-items:center; gap:6px; font:800 10px Inter, sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-top:4px; }
+  .kind i { width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .addr { color:var(--muted); font-size:14px; margin:6px 0 0; }
+  .tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .tags span { font-size:12px; border:1px solid color-mix(in srgb, var(--live) 50%, transparent); color:var(--live); border-radius:999px; padding:2px 9px; }
+  .contact { display:grid; grid-template-columns:auto minmax(0,1fr); gap:4px 10px; margin-top:10px; font-size:14px; }
+  .contact dt { color:var(--muted); font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; padding-top:2px; }
+  .contact dd { margin:0; overflow-wrap:anywhere; }
+  .contact a { color:var(--text); text-decoration-color:var(--accent); }
+  .copy { margin-left:6px; border:1px solid var(--line); background:none; color:var(--muted); border-radius:8px; font:600 11px Inter, sans-serif; padding:1px 7px; cursor:pointer; }
+  .none { color:var(--muted); font-style:italic; }
+  .row-btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .more { align-self:center; margin-top:6px; }
+  .empty { background:var(--panel); border:1px dashed var(--line); border-radius:16px; padding:24px; color:var(--muted); text-align:center; }
+  footer { border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+  footer .wrap { padding-block:18px 26px; }
+
+  .tabs { position:fixed; left:0; right:0; bottom:0; z-index:1000; display:flex; justify-content:space-around; background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(10px); border-top:1px solid var(--line); padding:8px max(8px, env(safe-area-inset-left, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)); }
+  .tabs a { display:flex; flex-direction:column; align-items:center; gap:2px; font:600 11px Inter, sans-serif; color:var(--muted); text-decoration:none; padding:4px 10px; }
+  .tabs a.on { color:var(--accent); }
+  .tabs svg { width:22px; height:22px; }
+  @media (min-width:861px) { .tabs { display:none; } }
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap">
+    <a class="logo" href="../home/"><i>Z</i>Z-CONNECTIONS</a>
+    <a class="back" href="../home/#fans">← Back to the app</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Discover · Venues near you</div>
+    <h1>Venues near you</h1>
+    <p>Pick your area, put in your ZIP code, and see the bars, clubs and stages around you, with how to reach them.</p>
+    <form class="find" id="find" autocomplete="off">
+      <div class="field">
+        <label for="area">Area</label>
+        <select id="area">
+          <option value="brooklyn">Brooklyn, NY</option>
+          <option disabled>Manhattan (coming next)</option>
+          <option disabled>Queens (coming next)</option>
+          <option disabled>The Bronx (coming next)</option>
+          <option disabled>Staten Island (coming next)</option>
+          <option disabled>Long Island (coming next)</option>
+          <option disabled>Upstate New York (coming next)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="zip">ZIP code</label>
+        <input type="text" id="zip" inputmode="numeric" maxlength="5" placeholder="11211" aria-describedby="msg">
+      </div>
+      <div class="actions">
+        <button class="btn primary" type="submit">Find venues</button>
+        <button class="btn ghost" type="button" id="gps">📍 Use my location</button>
+      </div>
+    </form>
+    <div class="msg" id="msg" role="status"></div>
+
+    <div class="filters">
+      <div class="chips" id="radius"><b>Within</b></div>
+      <div class="chips" id="types"><b>Type</b></div>
+      <div class="chips"><b>Show</b>
+        <label><input type="checkbox" id="onlyContact"> Only places with a phone or email</label>
+        <label><input type="checkbox" id="onlyShows"> Only places that mention shows, music or DJs</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main class="wrap">
+  <div class="summary" id="summary"></div>
+  <div class="results">
+    <div id="map" role="region" aria-label="Map of venues"></div>
+    <div class="list" id="list"></div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    Demo data, Brooklyn, collected 11/18/2026. Places: © OpenStreetMap contributors (ODbL). Contacts: each venue's own website. Population: US Census ACS 2019–2023. Check details with the venue before you book.
+  </div>
+</footer>
+
+<nav class="tabs" aria-label="App tabs">
+  <a href="../home/#top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Home</a>
+  <a class="on" href="../home/#fans"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Discover</a>
+  <a href="../home/#bookers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Book</a>
+  <a href="../home/#talent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Talent</a>
+  <a href="../home/#zc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>More</a>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const RADII = [0.5, 1, 2, 5];
+const TYPES = [
+  { id:'all',    t:'All' },
+  { id:'stage',  t:'Stages & music venues', k:['Music venue','Concert hall','Bandstand / outdoor stage','Outdoor stage','Stadium / arena','Restaurant / cafe with live music'], c:'#ff3d9a' },
+  { id:'club',   t:'Nightclubs', k:['Nightclub','Dance hall'], c:'#a66bff' },
+  { id:'theater',t:'Theaters & arts', k:['Theater','Arts center'], c:'#22e3ff' },
+  { id:'event',  t:'Event spaces', k:['Event venue','Community center','Conference / expo center'], c:'#ffd23f' },
+  { id:'bar',    t:'Bars', k:['Bar','Beer garden'], c:'#3ddc97' },
+];
+const colorOf = k => (TYPES.find(t => t.k && t.k.includes(k)) || {c:'#b8a9cc'}).c;
+const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1) + 'M' : n >= 1e3 ? Math.round(n/1e3) + 'K' : String(n);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const state = { data:null, center:null, label:'', radius:1, type:'all', shown:40 };
+const $ = id => document.getElementById(id);
+
+// Map
+const map = L.map('map', { zoomControl:true, scrollWheelZoom:false }).setView([40.65, -73.95], 12);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom:19, className:'dark-tiles',
+  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
+const layer = L.layerGroup().addTo(map);
+let circle = null, homeMarker = null;
+const markers = new Map();
+
+function miles(a, b, c, d) {
+  const r = 3958.8, p1 = a*Math.PI/180, p2 = c*Math.PI/180, dp = (c-a)*Math.PI/180, dl = (d-b)*Math.PI/180;
+  const x = Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+  return 2*r*Math.asin(Math.sqrt(x));
+}
+
+// Chips
+RADII.forEach(r => {
+  const b = document.createElement('button'); b.type = 'button';
+  b.textContent = r < 1 ? '½ mile' : r + (r === 1 ? ' mile' : ' miles'); b.dataset.r = r;
+  b.onclick = () => { state.radius = r; state.shown = 40; render(); };
+  $('radius').append(b);
+});
+TYPES.forEach(t => {
+  const b = document.createElement('button'); b.type = 'button'; b.textContent = t.t; b.dataset.t = t.id;
+  b.onclick = () => { state.type = t.id; state.shown = 40; render(); };
+  $('types').append(b);
+});
+$('onlyContact').onchange = $('onlyShows').onchange = () => { state.shown = 40; render(); };
+
+async function load(area) {
+  const res = await fetch('data/' + area + '.json');
+  state.data = await res.json();
+}
+
+function setCenter(lat, lon, label, zipInfo) {
+  state.center = [lat, lon]; state.label = label; state.zipInfo = zipInfo; state.shown = 40;
+  history.replaceState(null, '', label.startsWith('ZIP') ? '#zip-' + label.slice(4) : '#here');
+  render(true);
+}
+
+function findZip(z) {
+  const msg = $('msg');
+  if (!/^\d{5}$/.test(z)) { msg.textContent = 'Please type a 5-digit ZIP code, for example 11211.'; return; }
+  const info = state.data.zips[z];
+  if (!info) {
+    msg.textContent = z.startsWith('112')
+      ? `We have no venues listed for ${z} yet. Try a nearby Brooklyn ZIP.`
+      : `${z} is not in Brooklyn. Brooklyn ZIP codes start with 112. Other areas are coming next.`;
+    return;
+  }
+  msg.textContent = '';
+  setCenter(info[0], info[1], 'ZIP ' + z, info);
+}
+
+function render(fit) {
+  document.querySelectorAll('#radius button').forEach(b => b.classList.toggle('on', +b.dataset.r === state.radius));
+  document.querySelectorAll('#types button').forEach(b => b.classList.toggle('on', b.dataset.t === state.type));
+  layer.clearLayers(); markers.clear();
+  if (circle) { circle.remove(); circle = null; }
+  if (homeMarker) { homeMarker.remove(); homeMarker = null; }
+  const list = $('list'), sum = $('summary');
+  if (!state.center) {
+    sum.innerHTML = '';
+    list.innerHTML = '<div class="empty">Type a Brooklyn ZIP code above (for example <b>11211</b> Williamsburg, <b>11201</b> Downtown Brooklyn or <b>11215</b> Park Slope), or tap “Use my location”.</div>';
+    state.data.venues.forEach(v => L.circleMarker([v.lat, v.lon], { radius:3, color:colorOf(v.k), weight:0, fillOpacity:.6 }).addTo(layer));
+    return;
+  }
+  const [clat, clon] = state.center;
+  const t = TYPES.find(x => x.id === state.type);
+  const onlyC = $('onlyContact').checked, onlyS = $('onlyShows').checked;
+  const all = state.data.venues.map(v => ({ ...v, d: miles(clat, clon, v.lat, v.lon) }))
+    .filter(v => v.d <= state.radius)
+    .sort((a, b) => a.d - b.d);
+  const hits = all.filter(v => (!t.k || t.k.includes(v.k)) && (!onlyC || v.p || v.e.length) && (!onlyS || v.s));
+
+  // Summary
+  const near = state.zipInfo;
+  const withContact = hits.filter(v => v.p || v.e.length).length;
+  const stages = all.filter(v => !['Bar','Beer garden'].includes(v.k)).length;
+  const pop5 = near ? near[2] : (all[0] ? all[0].p5 : 0);
+  sum.innerHTML = `
+    <div class="stat"><b>${hits.length}</b><span>places within ${state.radius < 1 ? '½ mile' : state.radius + ' mi'} of ${esc(state.label)}</span></div>
+    <div class="stat"><b>${withContact}</b><span>with a phone or email</span></div>
+    <div class="stat"><b>${stages}</b><span>stages, clubs &amp; event spaces nearby (all types)</span></div>
+    <div class="stat"><b>${fmt(pop5)}</b><span>people live within 5 miles</span></div>`;
+
+  // Map
+  circle = L.circle(state.center, { radius: state.radius * 1609.34, color:'#22e3ff', weight:1, fillOpacity:.05 }).addTo(map);
+  homeMarker = L.marker(state.center, { icon: L.divIcon({ className:'', html:'<div class="home-pin"></div>', iconSize:[20,20] }), title:state.label }).addTo(map);
+  hits.forEach((v, i) => {
+    const m = L.marker([v.lat, v.lon], { icon: L.divIcon({ className:'', html:`<div class="pin" style="background:${colorOf(v.k)}"></div>`, iconSize:[14,14] }), title:v.n })
+      .bindPopup(`<b>${esc(v.n)}</b>${esc(v.k)} · ${v.d.toFixed(1)} mi<br>${esc(v.a)}`)
+      .on('click', () => focusCard(i));
+    m.addTo(layer); markers.set(i, m);
+  });
+  if (fit) map.fitBounds(circle.getBounds(), { padding:[10,10] });
+
+  // List
+  if (!hits.length) {
+    list.innerHTML = '<div class="empty">No places match. Try a bigger distance or another type.</div>';
+    return;
+  }
+  list.innerHTML = hits.slice(0, state.shown).map((v, i) => card(v, i)).join('') +
+    (hits.length > state.shown ? `<button class="btn ghost more" id="more">Show ${Math.min(40, hits.length - state.shown)} more (${hits.length - state.shown} left)</button>` : '');
+  const more = $('more'); if (more) more.onclick = () => { state.shown += 40; render(); };
+}
+
+function card(v, i) {
+  const maps = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(`${v.n}, ${v.a}, Brooklyn, NY ${v.z}`);
+  const email = v.e.length
+    ? v.e.map(e => `<a href="mailto:${esc(e)}">${esc(e)}</a><button class="copy" type="button" data-copy="${esc(e)}">Copy</button>`).join('<br>')
+    : '<span class="none">Not listed</span>';
+  const phone = v.p ? `<a href="tel:${esc(v.p.replace(/[^\d+]/g, ''))}">${esc(v.p)}</a>` : '<span class="none">Not listed</span>';
+  const web = v.w ? `<a href="https://${esc(v.w)}" target="_blank" rel="noopener">${esc(v.w.length > 42 ? v.w.slice(0, 40) + '…' : v.w)}</a>` : '<span class="none">Not listed</span>';
+  const ig = v.ig ? `<dt>Instagram</dt><dd><a href="https://instagram.com/${esc(v.ig.slice(1))}" target="_blank" rel="noopener">${esc(v.ig)}</a></dd>` : '';
+  const tags = v.s ? `<div class="tags">${v.s.split(', ').map(s => `<span>${esc(s)}</span>`).join('')}</div>` : '';
+  return `<article class="card" id="c${i}">
+    <div class="top">
+      <div><h3 data-i="${i}">${esc(v.n)}</h3><div class="kind"><i style="background:${colorOf(v.k)}"></i>${esc(v.k)}${v.h ? ' · ' + esc(v.h) : ''}</div></div>
+      <div class="dist">${v.d.toFixed(1)}<small> mi</small></div>
+    </div>
+    <p class="addr">${esc(v.a)}, Brooklyn, NY ${esc(v.z)}</p>
+    ${tags}
+    <dl class="contact"><dt>Phone</dt><dd>${phone}</dd><dt>Email</dt><dd>${email}</dd><dt>Website</dt><dd>${web}</dd>${ig}</dl>
+    <div class="row-btns">
+      ${v.p ? `<a class="btn primary sm" href="tel:${esc(v.p.replace(/[^\d+]/g, ''))}">Call</a>` : ''}
+      ${v.e.length ? `<a class="btn primary sm" href="mailto:${esc(v.e[0])}?subject=${encodeURIComponent('Booking inquiry – Z-Connections')}">Email</a>` : ''}
+      <a class="btn ghost sm" href="${maps}" target="_blank" rel="noopener">Directions</a>
+      <button class="btn ghost sm" type="button" data-show="${i}">Show on map</button>
+    </div>
+  </article>`;
+}
+
+function focusCard(i) {
+  if (i >= state.shown) { state.shown = i + 1; render(); }
+  document.querySelectorAll('.card.hi').forEach(c => c.classList.remove('hi'));
+  const c = $('c' + i); if (!c) return;
+  c.classList.add('hi'); c.scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+$('list').addEventListener('click', e => {
+  const cp = e.target.closest('[data-copy]');
+  if (cp) {
+    navigator.clipboard.writeText(cp.dataset.copy).then(() => { cp.textContent = 'Copied'; setTimeout(() => cp.textContent = 'Copy', 1500); }).catch(() => {});
+    return;
+  }
+  const s = e.target.closest('[data-show], h3[data-i]');
+  if (s) {
+    const i = +(s.dataset.show ?? s.dataset.i), m = markers.get(i);
+    if (m) { map.setView(m.getLatLng(), 16); m.openPopup(); if (window.innerWidth <= 860) $('map').scrollIntoView({ behavior:'smooth' }); }
+    document.querySelectorAll('.card.hi').forEach(c => c.classList.remove('hi'));
+    $('c' + i).classList.add('hi');
+  }
+});
+
+$('find').onsubmit = e => { e.preventDefault(); findZip($('zip').value.trim()); };
+$('zip').oninput = e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 5); };
+$('gps').onclick = () => {
+  const msg = $('msg');
+  if (!navigator.geolocation) { msg.textContent = 'This browser cannot share your location. Please type your ZIP code.'; return; }
+  msg.textContent = 'Finding you…';
+  navigator.geolocation.getCurrentPosition(p => {
+    const { latitude:la, longitude:lo } = p.coords;
+    if (la < 40.55 || la > 40.75 || lo < -74.05 || lo > -73.83) {
+      msg.textContent = 'You seem to be outside Brooklyn. Only Brooklyn is listed for now, so please type a Brooklyn ZIP code.';
+      return;
+    }
+    msg.textContent = '';
+    let best = null, bd = 1e9;
+    for (const [z, inf] of Object.entries(state.data.zips)) { const d = miles(la, lo, inf[0], inf[1]); if (d < bd) { bd = d; best = z; } }
+    $('zip').value = best || '';
+    setCenter(la, lo, 'you', best ? state.data.zips[best] : null);
+  }, () => { msg.textContent = 'Location was not shared. Please type your ZIP code.'; }, { timeout:10000 });
+};
+
+load('brooklyn').then(() => {
+  const m = location.hash.match(/^#zip-(\d{5})$/);
+  if (m) { $('zip').value = m[1]; findZip(m[1]); } else render();
+}).catch(() => { $('msg').textContent = 'The venue list did not load. Please refresh the page.'; });
+</script>
+</body>
+</html>

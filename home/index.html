@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Z-Connections App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  /* Layout: app hub. Top bar, search hero, featured artist, then the index grouped by who it is for. Phone gets a bottom tab bar. */
+  :root { --bg:#0b0710; --panel:#16101f; --panel2:#1e1529; --text:#f6f1ff; --muted:#b8a9cc; --accent:#ff3d9a; --accent2:#22e3ff; --glow:rgba(255,61,154,.5); --line:rgba(255,255,255,.12); --live:#3ddc97; --next:#ffd23f; color-scheme:dark; }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.55 Inter, system-ui, sans-serif; padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px)); }
+  @media (min-width:861px) { body { padding-bottom:0; } }
+  a { color:inherit; }
+  .wrap { width:100%; max-width:1180px; margin:0 auto; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+  :focus-visible { outline:2px solid var(--accent2); outline-offset:2px; }
+  @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
+
+  /* Top bar */
+  .bar { position:sticky; top:0; z-index:20; background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); padding-top:env(safe-area-inset-top, 0px); }
+  .bar .wrap { display:flex; align-items:center; gap:14px; padding-block:12px; }
+  .logo { font:30px/1 "Bebas Neue", sans-serif; letter-spacing:.06em; text-decoration:none; display:flex; align-items:center; gap:8px; }
+  .logo i { width:30px; height:30px; border-radius:9px; background:var(--accent); display:grid; place-items:center; font-style:normal; color:#fff; box-shadow:0 0 18px var(--glow); }
+  .wn { font:600 11px Inter, sans-serif; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:2px 8px; }
+  .bar nav { margin-left:auto; display:flex; gap:6px; align-items:center; }
+  .bar nav a { text-decoration:none; font-weight:600; font-size:14px; padding:8px 12px; border-radius:10px; color:var(--muted); }
+  .bar nav a:hover { color:var(--text); background:var(--panel); }
+  .btn { border:0; border-radius:12px; padding:10px 16px; font:800 14px Inter, sans-serif; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:8px; }
+  .btn.primary { background:var(--accent); color:#fff; box-shadow:0 6px 24px var(--glow); }
+  .btn.ghost { background:transparent; color:var(--text); border:1px solid var(--line); }
+  .logo, .btn { white-space:nowrap; }
+  section.group, .hero { scroll-margin-top:70px; }
+  @media (max-width:860px) { .bar nav a { display:none; } }
+  @media (max-width:520px) { .wn { display:none; } .logo { font-size:26px; } .feat { flex-direction:column; align-items:flex-start; } }
+
+  /* Hero */
+  .hero { background:radial-gradient(800px 360px at 10% 0%, var(--glow), transparent 60%), radial-gradient(700px 340px at 95% 10%, color-mix(in srgb, var(--accent2) 35%, transparent), transparent 60%); border-bottom:1px solid var(--line); }
+  .hero .wrap { padding-block:40px 30px; }
+  .eyebrow { font:800 12px Inter, sans-serif; letter-spacing:.18em; text-transform:uppercase; color:var(--accent2); }
+  .hero h1 { font:clamp(52px,10vw,112px)/.88 "Bebas Neue", sans-serif; margin:10px 0 12px; letter-spacing:.02em; text-wrap:balance; }
+  .hero h1 span { color:var(--accent); text-shadow:0 0 30px var(--glow); }
+  .hero p { color:var(--muted); font-size:18px; margin:0 0 22px; }
+  .search { display:flex; gap:10px; flex-wrap:wrap; }
+  .search input { flex:1 1 260px; min-width:0; padding:14px 16px; border-radius:14px; border:1px solid var(--line); background:var(--panel); color:var(--text); font:inherit; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  .chips button { border:1px solid var(--line); background:none; color:var(--text); border-radius:999px; padding:6px 14px; cursor:pointer; font:600 13px Inter, sans-serif; }
+  .chips button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+  /* Featured */
+  .featured { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:18px; margin-block:26px 8px; }
+  @media (max-width:860px) { .featured { grid-template-columns:minmax(0,1fr); } }
+  .feat { position:relative; display:flex; gap:18px; align-items:center; text-decoration:none; background:linear-gradient(120deg, color-mix(in srgb, var(--accent) 30%, var(--panel)), var(--panel) 70%); border:1px solid var(--line); border-radius:20px; padding:20px; transition:transform .2s; }
+  .feat:hover { transform:translateY(-2px); }
+  .feat img { width:110px; height:110px; border-radius:50%; object-fit:cover; border:3px solid var(--accent); box-shadow:0 0 24px var(--glow); flex:none; background:var(--panel2); }
+  .feat .k { font:800 11px Inter, sans-serif; letter-spacing:.16em; text-transform:uppercase; color:var(--accent2); }
+  .feat h3 { font:44px/.95 "Bebas Neue", sans-serif; margin:4px 0; letter-spacing:.03em; }
+  .feat p { margin:0; color:var(--muted); font-size:14px; }
+  .feat .go { margin-top:10px; font-weight:800; font-size:14px; color:var(--accent); }
+  .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .stat { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:14px; }
+  .stat b { font:38px/1 "Bebas Neue", sans-serif; color:var(--accent); display:block; font-variant-numeric:tabular-nums; }
+  .stat span { font-size:13px; color:var(--muted); }
+
+  /* Index */
+  section.group { margin-top:34px; }
+  .gh { display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .gh h2 { font:34px/1 "Bebas Neue", sans-serif; letter-spacing:.05em; margin:0; }
+  .gh small { color:var(--muted); font-size:13px; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:12px; }
+  .tile { display:flex; flex-direction:column; gap:8px; text-align:left; background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px; color:var(--text); text-decoration:none; cursor:pointer; font:inherit; transition:border-color .2s, transform .2s, background .2s; }
+  .tile:hover { border-color:var(--accent); transform:translateY(-2px); background:var(--panel2); }
+  .tile .top { display:flex; justify-content:space-between; align-items:center; }
+  .ico { width:42px; height:42px; border-radius:12px; display:grid; place-items:center; background:color-mix(in srgb, var(--c, var(--accent)) 22%, transparent); color:var(--c, var(--accent)); }
+  .ico svg { width:22px; height:22px; }
+  .st { font:800 10px Inter, sans-serif; letter-spacing:.12em; text-transform:uppercase; border-radius:999px; padding:3px 8px; }
+  .st.live { color:#062b1c; background:var(--live); }
+  .st.next { color:#2b2300; background:var(--next); }
+  .tile h3 { margin:0; font-size:17px; font-weight:800; }
+  .tile p { margin:0; color:var(--muted); font-size:14px; }
+  .empty { color:var(--muted); padding:20px 0; }
+
+  footer { margin-top:44px; border-top:1px solid var(--line); padding-block:22px 34px; color:var(--muted); font-size:13px; }
+
+  /* Phone tab bar */
+  .tabs { position:fixed; left:0; right:0; bottom:0; z-index:30; display:none; background:var(--panel); border-top:1px solid var(--line); padding:8px max(8px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
+  @media (max-width:860px) { .tabs { display:grid; grid-template-columns:repeat(5,1fr); } }
+  .tabs a { display:flex; flex-direction:column; align-items:center; gap:2px; font-size:11px; font-weight:600; color:var(--muted); text-decoration:none; padding:4px 0; }
+  .tabs a.on { color:var(--accent); }
+  .tabs svg { width:22px; height:22px; }
+
+  #toast { position:fixed; left:50%; bottom:calc(92px + env(safe-area-inset-bottom, 0px)); transform:translateX(-50%); background:var(--panel2); border:1px solid var(--accent); border-radius:14px; padding:12px 18px; z-index:40; max-width:calc(100% - 32px); box-shadow:0 10px 30px rgba(0,0,0,.5); }
+  @media (min-width:861px) { #toast { bottom:28px; } }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="logo" href="#top"><i>Z</i>Z-CONNECTIONS</a>
+    <span class="wn" title="The app name is not chosen yet">app name TBD</span>
+    <nav>
+      <a href="#fans">Discover</a>
+      <a href="#talent">For talent</a>
+      <a href="#bookers">Venues &amp; bookers</a>
+      <a href="#zc">Z-Connections</a>
+      <button class="btn primary" data-soon="Sign in and create an account">Sign in</button>
+    </nav>
+  </div>
+</header>
+
+<div class="hero" id="top">
+  <div class="wrap">
+    <div class="eyebrow">Artists · DJs · Entertainment</div>
+    <h1>Where talent gets <span>seen</span> and <span>booked</span></h1>
+    <p>Find new talent, follow their story, and book them, all in one place. Run by Z-Connections.</p>
+    <div class="search">
+      <input id="q" type="search" placeholder="Search: artists, venues, shows, services" aria-label="Search the app">
+    </div>
+    <div class="chips" id="chips">
+      <button data-f="all" class="on">All</button>
+      <button data-f="fans">Discover</button>
+      <button data-f="talent">For talent</button>
+      <button data-f="bookers">Venues &amp; bookers</button>
+      <button data-f="zc">Z-Connections</button>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+  <div class="featured">
+    <a class="feat" href="../">
+      <img src="https://image-cdn-ak.spotifycdn.com/image/ab676161000051741b0f6fbc1550eba925f3ee1d" alt="Law Lucas">
+      <div>
+        <div class="k">Featured artist · Live demo</div>
+        <h3>Law Lucas</h3>
+        <p>Southern hip-hop and zydeco from Plaquemine, Louisiana. Videos, music, his story, and booking.</p>
+        <div class="go">Open his page →</div>
+      </div>
+    </a>
+    <div class="stats" aria-label="App numbers (demo)">
+      <div class="stat"><b>1</b><span>artist page live</span></div>
+      <div class="stat"><b>29</b><span>releases playable</span></div>
+      <div class="stat"><b>10</b><span>videos playable</span></div>
+    </div>
+  </div>
+
+  <div id="index"></div>
+  <p class="empty" id="empty" hidden>Nothing matches. Try another word.</p>
+</main>
+
+<footer><div class="wrap">Demo home page · Z-Connections (z-connections.com) · Talent management for artists, DJs and entertainment. Tiles marked NEXT are not built yet.</div></footer>
+
+<nav class="tabs" aria-label="App tabs">
+  <a class="on" href="#top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Home</a>
+  <a href="#fans"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Discover</a>
+  <a href="#bookers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Book</a>
+  <a href="#talent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Talent</a>
+  <a href="#zc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>More</a>
+</nav>
+
+<div id="toast" role="status" hidden></div>
+
+<script>
+// Icon paths (24x24, stroke)
+const I = {
+  mic:'<path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  disc:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2"/>',
+  star:'<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
+  cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  feed:'<path d="M4 5h16M4 12h16M4 19h10"/>',
+  page:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  check:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
+  chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  pin:'<path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+  hand:'<path d="M7 11l4-4a2.8 2.8 0 0 1 4 0l5 5M3 13l5 5c1 1 2.5 1 3.5 0L14 15.5"/>',
+  brief:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>',
+  mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  tag:'<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/>',
+};
+// The index. g = group, s = live or next, href only for live pages.
+const GROUPS = [
+  { id:'fans', name:'Discover', note:'For fans: find new talent and follow them' },
+  { id:'talent', name:'For talent', note:'For artists and DJs: your page, your story, your bookings' },
+  { id:'bookers', name:'Venues & bookers', note:'For venues, promoters, labels and brands' },
+  { id:'zc', name:'Z-Connections', note:'Management and services' },
+];
+const TILES = [
+  { g:'fans', i:'mic', c:'#ff3d9a', t:'Artists', d:'Browse artists by genre, city and mood. Tap to light up their page.', s:'live', href:'../' },
+  { g:'fans', i:'disc', c:'#22e3ff', t:'DJs', d:'Find DJs for clubs, parties and festivals.', s:'next' },
+  { g:'fans', i:'pin', c:'#3ddc97', t:'Venues near you', d:'Type your ZIP code and see the clubs, bars and stages around you, with phone and email. Brooklyn first.', s:'live', href:'../venues/' },
+  { g:'fans', i:'star', c:'#ffd23f', t:'New this week', d:'Fresh pages, new drops and rising names.', s:'next' },
+  { g:'fans', i:'cal', c:'#ff8a1f', t:'Shows & events', d:'Upcoming shows near you, with ticket links.', s:'next' },
+  { g:'fans', i:'feed', c:'#b98cff', t:'The feed', d:'Posts and updates from the talent you follow.', s:'next' },
+
+  { g:'talent', i:'page', c:'#ff3d9a', t:'Create your page', d:'Your own MySpace-style page and digital EPK. Pick your look.', s:'next' },
+  { g:'talent', i:'feed', c:'#22e3ff', t:'Tell your story', d:'Posts, a story timeline and fan stories, like Law’s Story.', s:'live', href:'../story.html' },
+  { g:'talent', i:'check', c:'#3ddc97', t:'Get verified', d:'Earn the verified badge on your page.', s:'next' },
+  { g:'talent', i:'chart', c:'#ffd23f', t:'Your stats', d:'Plays, views, followers and booking requests in one place.', s:'next' },
+
+  { g:'bookers', i:'search', c:'#ff3d9a', t:'Find talent', d:'Search by genre, city, followers and availability.', s:'next' },
+  { g:'bookers', i:'hand', c:'#22e3ff', t:'Book talent', d:'Send a booking request straight to the artist and Z-Connections.', s:'next' },
+  { g:'bookers', i:'pin', c:'#ff8a1f', t:'Venues', d:'Venue pages with capacity, genres and open dates.', s:'next' },
+  { g:'bookers', i:'star', c:'#b98cff', t:'Labels & managers', d:'Spot unsigned talent that is growing fast.', s:'next' },
+
+  { g:'zc', i:'brief', c:'#ff3d9a', t:'Management', d:'Talent management for artists, DJs and entertainment.', s:'next' },
+  { g:'zc', i:'tag', c:'#ffd23f', t:'Plans & pricing', d:'Free artist page. Pro and team plans later. Prices shown openly.', s:'next' },
+  { g:'zc', i:'mail', c:'#22e3ff', t:'Contact us', d:'Talk to Z-Connections about management or bookings.', s:'live', href:'https://z-connections.com' },
+];
+
+const svg = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+let filter = 'all', q = '';
+function render() {
+  let shown = 0;
+  document.getElementById('index').innerHTML = GROUPS.filter(g => filter === 'all' || g.id === filter).map(g => {
+    const list = TILES.filter(t => t.g === g.id && (t.t + ' ' + t.d).toLowerCase().includes(q));
+    shown += list.length;
+    if (!list.length) return '';
+    return `<section class="group" id="${g.id}"><div class="gh"><h2>${g.name}</h2><small>${g.note}</small></div><div class="tiles">` +
+      list.map(t => {
+        const inner = `<div class="top"><span class="ico" style="--c:${t.c}">${svg(I[t.i])}</span><span class="st ${t.s}">${t.s === 'live' ? 'Live' : 'Next'}</span></div><h3>${t.t}</h3><p>${t.d}</p>`;
+        const ext = t.href && t.href.startsWith('http') ? ' target="_blank" rel="noopener"' : '';
+        return t.href ? `<a class="tile" href="${t.href}"${ext}>${inner}</a>` : `<button class="tile" data-soon="${t.t}">${inner}</button>`;
+      }).join('') + '</div></section>';
+  }).join('');
+  document.getElementById('empty').hidden = shown > 0;
+}
+render();
+
+document.getElementById('chips').onclick = e => {
+  const f = e.target.dataset.f; if (!f) return;
+  filter = f;
+  document.querySelectorAll('#chips button').forEach(b => b.classList.toggle('on', b.dataset.f === f));
+  render();
+};
+document.getElementById('q').oninput = e => { q = e.target.value.trim().toLowerCase(); render(); };
+
+const toast = document.getElementById('toast');
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-soon]'); if (!b) return;
+  toast.textContent = `${b.dataset.soon}: coming next. This part is not built yet.`;
+  toast.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => toast.hidden = true, 2600);
+});
+// Tab bar: show which part is on screen. Jumping to a group clears the filter so the group exists.
+document.querySelectorAll('.tabs a, .bar nav a').forEach(a => a.addEventListener('click', () => {
+  if (filter !== 'all') { filter = 'all'; document.querySelectorAll('#chips button').forEach(b => b.classList.toggle('on', b.dataset.f === 'all')); render(); }
+  document.querySelectorAll('.tabs a').forEach(x => x.classList.toggle('on', x.getAttribute('href') === a.getAttribute('href')));
+}));
+</script>
+</body>
+</html>
