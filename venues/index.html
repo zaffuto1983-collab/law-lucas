@@ -120,13 +120,14 @@
   <div class="wrap">
     <div class="eyebrow">Discover · Venues near you</div>
     <h1>Venues near you</h1>
-    <p>New York and Arizona. Pick your state and area, put in your ZIP code, and see the bars, clubs and stages around you, with how to reach them.</p>
+    <p>New York, New Jersey and Arizona. Pick your state and area, put in your ZIP code, and see the bars, clubs and stages around you, with how to reach them.</p>
     <form class="find" id="find" autocomplete="off">
       <div class="field">
         <label for="st">State</label>
         <select id="st">
           <option value="ny">New York</option>
           <option value="az">Arizona</option>
+          <option value="nj">New Jersey</option>
         </select>
       </div>
       <div class="field">
@@ -165,7 +166,7 @@
 
 <footer>
   <div class="wrap">
-    Demo data, New York State and Arizona, collected November 2026. Places: © OpenStreetMap contributors (ODbL). Contacts: each venue's own website. “AI” notes: a free AI model read the venue's website. Population: US Census ACS 2019–2023. Check details with the venue before you book.
+    Demo data, New York State, New Jersey and Arizona, collected November 2026. Places: © OpenStreetMap contributors (ODbL). Contacts: each venue's own website. “AI” notes: a free AI model read the venue's website. Population: US Census ACS 2019–2023. Check details with the venue before you book.
   </div>
 </footer>
 
@@ -259,6 +260,8 @@ const STATES = {
         ex:'<b>11211</b> Brooklyn, <b>10003</b> Manhattan, <b>11743</b> Long Island, <b>12207</b> Albany or <b>14202</b> Buffalo' },
   az: { abbr:'AZ', name:'Arizona', zip:['850','865'], box:[31.33, 37.01, -114.82, -109.04],
         ex:'<b>85004</b> Phoenix, <b>85281</b> Tempe, <b>85701</b> Tucson, <b>86001</b> Flagstaff or <b>86336</b> Sedona' },
+  nj: { abbr:'NJ', name:'New Jersey', zip:['070','089'], box:[38.92, 41.36, -75.57, -73.88],
+        ex:'<b>07030</b> Hoboken, <b>07102</b> Newark, <b>07712</b> Asbury Park, <b>08401</b> Atlantic City or <b>08608</b> Trenton' },
 };
 const loaded = {};
 let ST = STATES.ny, AREA_NAME = {};
@@ -283,7 +286,7 @@ async function findZip(z) {
   const msg = $('msg');
   if (!/^\d{5}$/.test(z)) { msg.textContent = 'Please type a 5-digit ZIP code, for example 11211 or 85004.'; return; }
   const key = stateOfZip(z);
-  if (!key) { msg.textContent = `${z} is not a New York or Arizona ZIP code. Only those two states are listed for now; more states come next.`; return; }
+  if (!key) { msg.textContent = `${z} is not a New York, New Jersey or Arizona ZIP code. Only those three states are listed for now; more states come next.`; return; }
   let switched = '';
   if (STATES[key] !== ST) {
     msg.textContent = 'Loading ' + STATES[key].name + '…';
@@ -452,9 +455,14 @@ $('gps').onclick = () => {
   msg.textContent = 'Finding you…';
   navigator.geolocation.getCurrentPosition(async p => {
     const { latitude:la, longitude:lo } = p.coords;
-    const key = Object.keys(STATES).find(k => { const b = STATES[k].box; return la >= b[0] && la <= b[1] && lo >= b[2] && lo <= b[3]; });
+    const cands = Object.keys(STATES).filter(k => { const b = STATES[k].box; return la >= b[0] && la <= b[1] && lo >= b[2] && lo <= b[3]; });
+    let key = cands[0], kd = 1e9;
+    if (cands.length > 1) for (const k of cands) {
+      if (!loaded[k]) loaded[k] = await (await fetch('data/' + k + '.json')).json();
+      for (const inf of Object.values(loaded[k].zips)) { const d = miles(la, lo, inf[0], inf[1]); if (d < kd) { kd = d; key = k; } }
+    }
     if (!key) {
-      msg.textContent = 'You seem to be outside New York and Arizona. Only those two states are listed for now, so please type a ZIP code there.';
+      msg.textContent = 'You seem to be outside New York, New Jersey and Arizona. Only those three states are listed for now, so please type a ZIP code there.';
       return;
     }
     msg.textContent = '';
