@@ -85,6 +85,8 @@
   .kind { display:inline-flex; align-items:center; gap:6px; font:800 10px Inter, sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-top:4px; }
   .kind i { width:9px; height:9px; border-radius:50%; display:inline-block; }
   .addr { color:var(--muted); font-size:14px; margin:6px 0 0; }
+  .aiw { margin:8px 0 0; font-size:13px; color:var(--text); background:color-mix(in srgb, var(--accent2) 10%, transparent); border:1px solid color-mix(in srgb, var(--accent2) 35%, transparent); border-radius:10px; padding:6px 10px; }
+  .aiw b { color:var(--accent2); font-size:11px; letter-spacing:.08em; text-transform:uppercase; margin-right:4px; }
   .tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
   .tags span { font-size:12px; border:1px solid color-mix(in srgb, var(--live) 50%, transparent); color:var(--live); border-radius:999px; padding:2px 9px; }
   .contact { display:grid; grid-template-columns:auto minmax(0,1fr); gap:4px 10px; margin-top:10px; font-size:14px; }
@@ -118,18 +120,19 @@
   <div class="wrap">
     <div class="eyebrow">Discover · Venues near you</div>
     <h1>Venues near you</h1>
-    <p>Pick your area, put in your ZIP code, and see the bars, clubs and stages around you, with how to reach them.</p>
+    <p>All of New York State. Pick your area, put in your ZIP code, and see the bars, clubs and stages around you, with how to reach them.</p>
     <form class="find" id="find" autocomplete="off">
       <div class="field">
         <label for="area">Area</label>
         <select id="area">
-          <option value="brooklyn">Brooklyn, NY</option>
-          <option disabled>Manhattan (coming next)</option>
-          <option disabled>Queens (coming next)</option>
-          <option disabled>The Bronx (coming next)</option>
-          <option disabled>Staten Island (coming next)</option>
-          <option disabled>Long Island (coming next)</option>
-          <option disabled>Upstate New York (coming next)</option>
+          <option value="all">All of New York State</option>
+          <option value="bk">Brooklyn</option>
+          <option value="mn">Manhattan</option>
+          <option value="qn">Queens</option>
+          <option value="bx">The Bronx</option>
+          <option value="si">Staten Island</option>
+          <option value="li">Long Island</option>
+          <option value="up">Upstate New York</option>
         </select>
       </div>
       <div class="field">
@@ -148,7 +151,7 @@
       <div class="chips" id="types"><b>Type</b></div>
       <div class="chips"><b>Show</b>
         <label><input type="checkbox" id="onlyContact"> Only places with a phone or email</label>
-        <label><input type="checkbox" id="onlyShows"> Only places that mention shows, music or DJs</label>
+        <label><input type="checkbox" id="onlyShows"> Only places with shows, music or DJs</label>
       </div>
     </div>
   </div>
@@ -164,7 +167,7 @@
 
 <footer>
   <div class="wrap">
-    Demo data, Brooklyn, collected 11/18/2026. Places: © OpenStreetMap contributors (ODbL). Contacts: each venue's own website. Population: US Census ACS 2019–2023. Check details with the venue before you book.
+    Demo data, New York State, collected November 2026. Places: © OpenStreetMap contributors (ODbL). Contacts: each venue's own website. “AI” notes: a free AI model read the venue's website. Population: US Census ACS 2019–2023. Check details with the venue before you book.
   </div>
 </footer>
 
@@ -178,7 +181,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-const RADII = [0.5, 1, 2, 5];
+const RADII = [0.5, 1, 2, 5, 10, 25];
 const TYPES = [
   { id:'all',    t:'All' },
   { id:'stage',  t:'Stages & music venues', k:['Music venue','Concert hall','Bandstand / outdoor stage','Outdoor stage','Stadium / arena','Restaurant / cafe with live music'], c:'#ff3d9a' },
@@ -205,7 +208,7 @@ function markSeen(i) {
 }
 
 // Map
-const map = L.map('map', { zoomControl:true, scrollWheelZoom:false });
+const map = L.map('map', { zoomControl:true, scrollWheelZoom:false, preferCanvas:true });
 map.attributionControl.setPrefix(false);
 map.setView([40.65, -73.95], 12);
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -263,19 +266,34 @@ function setCenter(lat, lon, label, zipInfo) {
   render(true);
 }
 
+const AREA_NAME = { all:'New York State', bk:'Brooklyn', mn:'Manhattan', qn:'Queens', bx:'The Bronx', si:'Staten Island', li:'Long Island', up:'Upstate New York' };
 function findZip(z) {
   const msg = $('msg');
   if (!/^\d{5}$/.test(z)) { msg.textContent = 'Please type a 5-digit ZIP code, for example 11211.'; return; }
   const info = state.data.zips[z];
   if (!info) {
-    msg.textContent = z.startsWith('112')
-      ? `We have no venues listed for ${z} yet. Try a nearby Brooklyn ZIP.`
-      : `${z} is not in Brooklyn. Brooklyn ZIP codes start with 112. Other areas are coming next.`;
+    msg.textContent = (z >= '10000' && z <= '14999')
+      ? `We could not find ZIP ${z}. Please check it, or try a nearby ZIP.`
+      : `${z} is not a New York State ZIP code. Only New York is listed for now; other states come next.`;
     return;
   }
-  msg.textContent = '';
+  const sel = $('area');
+  if (sel.value !== 'all' && sel.value !== info[5]) {
+    sel.value = info[5];
+    msg.textContent = `ZIP ${z} is in ${AREA_NAME[info[5]]}, so the area changed to ${AREA_NAME[info[5]]}.`;
+  } else msg.textContent = '';
   setCenter(info[0], info[1], 'ZIP ' + z, info);
 }
+
+// Area picker with no ZIP yet: show that area on the map
+$('area').onchange = () => {
+  $('msg').textContent = '';
+  render();
+  if (state.center) return;
+  const a = $('area').value, pts = state.data.venues.filter(v => a === 'all' || v.ar === a).map(v => [v.lat, v.lon]);
+  if (pts.length) map.fitBounds(pts, { padding:[10,10] });
+};
+const inArea = v => $('area').value === 'all' || v.ar === $('area').value;
 
 function render(fit) {
   document.querySelectorAll('#radius button').forEach(b => b.classList.toggle('on', +b.dataset.r === state.radius));
@@ -286,17 +304,18 @@ function render(fit) {
   const list = $('list'), sum = $('summary');
   if (!state.center) {
     sum.innerHTML = '';
-    list.innerHTML = '<div class="empty">Type a Brooklyn ZIP code above (for example <b>11211</b> Williamsburg, <b>11201</b> Downtown Brooklyn or <b>11215</b> Park Slope), or tap “Use my location”.</div>';
-    state.data.venues.forEach(v => L.circleMarker([v.lat, v.lon], { radius:3, color:colorOf(v.k), weight:0, fillOpacity:.6 }).addTo(layer));
+    const a = $('area').value, n = state.data.venues.filter(inArea).length;
+    list.innerHTML = `<div class="empty"><b>${n.toLocaleString()}</b> places in ${AREA_NAME[a]}.<br>Type a New York ZIP code above (for example <b>11211</b> Brooklyn, <b>10003</b> Manhattan, <b>11743</b> Long Island, <b>12207</b> Albany or <b>14202</b> Buffalo), or tap “Use my location”.</div>`;
+    state.data.venues.filter(inArea).forEach(v => L.circleMarker([v.lat, v.lon], { radius:3, color:colorOf(v.k), weight:0, fillOpacity:.6 }).addTo(layer));
     return;
   }
   const [clat, clon] = state.center;
   const t = TYPES.find(x => x.id === state.type);
   const onlyC = $('onlyContact').checked, onlyS = $('onlyShows').checked;
-  const all = state.data.venues.map(v => ({ ...v, d: miles(clat, clon, v.lat, v.lon) }))
+  const all = state.data.venues.filter(inArea).map(v => ({ ...v, d: miles(clat, clon, v.lat, v.lon) }))
     .filter(v => v.d <= state.radius)
     .sort((a, b) => a.d - b.d);
-  const hits = all.filter(v => (!t.k || t.k.includes(v.k)) && (!onlyC || v.p || v.e.length) && (!onlyS || v.s));
+  const hits = all.filter(v => (!t.k || t.k.includes(v.k)) && (!onlyC || v.p || v.e.length) && (!onlyS || v.s || v.ai === 'Yes'));
   state.hits = hits;
   if (current >= hits.length) current = -1;
   updateNav();
@@ -334,7 +353,7 @@ function render(fit) {
 }
 
 function card(v, i) {
-  const maps = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(`${v.n}, ${v.a}, Brooklyn, NY ${v.z}`);
+  const maps = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(`${v.n}, ${v.a}, ${v.c ? v.c + ', ' : ''}NY ${v.z}`);
   const email = v.e.length
     ? v.e.map(e => `<a href="mailto:${esc(e)}">${esc(e)}</a><button class="copy" type="button" data-copy="${esc(e)}">Copy</button>`).join('<br>')
     : '<span class="none">Not listed</span>';
@@ -347,9 +366,10 @@ function card(v, i) {
       <div><h3 data-i="${i}">${esc(v.n)}</h3><div class="kind"><i style="background:${colorOf(v.k)}"></i>${esc(v.k)}${v.h ? ' · ' + esc(v.h) : ''}</div></div>
       <div class="dist">${v.d.toFixed(1)}<small> mi</small></div>
     </div>
-    <p class="addr">${esc(v.a)}, Brooklyn, NY ${esc(v.z)}</p>
+    <p class="addr">${esc([v.a, v.c].filter(Boolean).join(', '))}, NY ${esc(v.z)}</p>
+    ${v.aw || v.ai === 'Yes' ? `<p class="aiw"><b>AI${v.ai ? ' · shows: ' + esc(v.ai) : ''}</b>${v.aw ? ' ' + esc(v.aw) : ''}${v.cap ? ' · capacity ' + v.cap : ''}</p>` : ''}
     ${tags}
-    <dl class="contact"><dt>Phone</dt><dd>${phone}</dd><dt>Email</dt><dd>${email}</dd><dt>Website</dt><dd>${web}</dd>${ig}</dl>
+    <dl class="contact"><dt>Phone</dt><dd>${phone}</dd><dt>Email</dt><dd>${email}</dd><dt>Website</dt><dd>${web}</dd>${ig}${v.bc ? `<dt>Booking</dt><dd>${esc(v.bc)}</dd>` : ''}</dl>
     <div class="row-btns">
       ${v.p ? `<a class="btn primary sm" href="tel:${esc(v.p.replace(/[^\d+]/g, ''))}">Call</a>` : ''}
       ${v.e.length ? `<a class="btn primary sm" href="mailto:${esc(v.e[0])}?subject=${encodeURIComponent('Booking inquiry – Z-Connections')}">Email</a>` : ''}
@@ -411,21 +431,22 @@ $('gps').onclick = () => {
   msg.textContent = 'Finding you…';
   navigator.geolocation.getCurrentPosition(p => {
     const { latitude:la, longitude:lo } = p.coords;
-    if (la < 40.55 || la > 40.75 || lo < -74.05 || lo > -73.83) {
-      msg.textContent = 'You seem to be outside Brooklyn. Only Brooklyn is listed for now, so please type a Brooklyn ZIP code.';
+    if (la < 40.49 || la > 45.02 || lo < -79.77 || lo > -71.85) {
+      msg.textContent = 'You seem to be outside New York State. Only New York is listed for now, so please type a New York ZIP code.';
       return;
     }
     msg.textContent = '';
     let best = null, bd = 1e9;
     for (const [z, inf] of Object.entries(state.data.zips)) { const d = miles(la, lo, inf[0], inf[1]); if (d < bd) { bd = d; best = z; } }
     $('zip').value = best || '';
+    if (best) $('area').value = 'all';
     setCenter(la, lo, 'you', best ? state.data.zips[best] : null);
   }, () => { msg.textContent = 'Location was not shared. Please type your ZIP code.'; }, { timeout:10000 });
 };
 
-load('brooklyn').then(() => {
+load('ny').then(() => {
   const m = location.hash.match(/^#zip-(\d{5})$/);
-  if (m) { $('zip').value = m[1]; findZip(m[1]); } else render();
+  if (m) { $('zip').value = m[1]; findZip(m[1]); } else $('area').onchange();
 }).catch(() => { $('msg').textContent = 'The venue list did not load. Please refresh the page.'; });
 </script>
 </body>
